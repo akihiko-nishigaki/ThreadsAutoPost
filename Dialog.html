@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      .container {
+        padding: 20px;
+        font-family: Arial, sans-serif;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .message {
+        margin-top: 10px;
+        padding: 10px;
+      }
+      .error {
+        color: red;
+      }
+      .success {
+        color: green;
+      }
+      /* デバッグ用ログエリアの追加 */
+      #debugLog {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border: 1px solid #ddd;
+        font-family: monospace;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="form-group">
+        <label for="rowNumber">コピー元のNo:</label>
+        <input type="number" id="rowNumber" min="1" />
+      </div>
+      <button class="button" onclick="processValues()">値をコピー</button>
+      <div id="message" class="message"></div>
+    </div>
+    
+    <script>
+      function processValues() {
+        const rowNumber = document.getElementById('rowNumber').value;
+        
+        if (!rowNumber || rowNumber < 1) {
+          showMessage('有効なNoを入力してください', true);
+          return;
+        }
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            showMessage(result.message, !result.success);
+            if (result.success) {
+              setTimeout(function() {
+                google.script.host.close();
+              }, 1500);
+            }
+          })
+          .withFailureHandler(function(error) {
+            showMessage('エラーが発生しました: ' + error, true);
+          })
+          .copyValuesToActiveRow(rowNumber);
+      }
+      
+      function showMessage(message, isError) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.innerHTML = message;
+        messageDiv.className = 'message ' + (isError ? 'error' : 'success');
+      }
+
+    </script>
+  </body>
+</html>

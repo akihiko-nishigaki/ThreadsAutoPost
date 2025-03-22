@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .title {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 24px;
+    }
+
+    .upload-area {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      transition: border-color 0.3s;
+    }
+
+    .upload-area:hover {
+      border-color: #3498db;
+    }
+
+    .file-input-wrapper {
+      margin: 20px 0;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .file-input-label {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #3498db;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .file-input-label:hover {
+      background-color: #2980b9;
+    }
+
+    .preview {
+      max-width: 100%;
+      max-height: 300px;
+      margin: 20px 0;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .error {
+      color: #e74c3c;
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #fde8e7;
+      border-radius: 4px;
+      font-size: 14px;
+      white-space: pre-line;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #uploadButton {
+      width: 100%;
+      padding: 12px;
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #uploadButton:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+
+    #uploadButton:hover:not(:disabled) {
+      background-color: #27ae60;
+    }
+
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    #loadingText {
+      font-size: 18px;
+      color: #333;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .file-info {
+      font-size: 14px;
+      color: #666;
+      margin-top: 10px;
+    }
+    /* クロップ関連の新しいスタイル */
+    .crop-container {
+      max-width: 100%;
+      margin: 20px 0;
+      display: none;
+    }
+
+    .crop-area {
+      max-width: 100%;
+      height: 400px;
+      background: #f0f0f0;
+      margin-bottom: 10px;
+    }
+
+    .crop-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .aspect-ratio-btn {
+      padding: 8px 16px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      min-width: 100px;
+    }
+
+    .aspect-ratio-btn.active {
+      background: #2980b9;
+    }
+
+    .crop-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    #cropImage {
+      width: 100%;
+      max-width: 100%;
+      display: block;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">ファイルアップロード</h1>
+    <div id="mainContent">
+      <div class="upload-area">
+        <div class="file-input-wrapper">
+          <label for="fileInput" class="file-input-label">ファイルを選択</label>
+          <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.mov,.mp4">
+        </div>
+        <div class="file-info">
+          対応形式: JPG, PNG, MOV, MP4<br>
+          サイズ制限: 画像 8MB以内, 動画 30MB以内
+        </div>
+      </div>
+      
+      <!-- クロップ用のコンテナ -->
+      <div id="cropContainer" class="crop-container">
+        <div class="crop-buttons">
+          <button class="aspect-ratio-btn" data-ratio="0">トリミングなし</button>
+          <button class="aspect-ratio-btn" data-ratio="1">1:1</button>
+          <button class="aspect-ratio-btn" data-ratio="0.5625">9:16</button>
+          <button class="aspect-ratio-btn" data-ratio="1.7778">16:9</button>
+        </div>
+        <div class="crop-area">
+          <img id="cropImage" src="">
+        </div>
+        <div class="crop-actions">
+          <button id="applyCrop" class="file-input-label">トリミングを適用</button>
+          <button id="cancelCrop" class="file-input-label" style="background-color: #e74c3c;">キャンセル</button>
+        </div>
+      </div>
+      
+      <div id="preview" class="hidden">
+        <img id="imagePreview" class="preview hidden">
+        <video id="videoPreview" class="preview hidden" controls>
+          お使いのブラウザは動画の再生に対応していません。
+        </video>
+      </div>
+
+      <div id="error" class="error hidden"></div>
+      <button id="uploadButton" onclick="uploadFile()" disabled>アップロード</button>
+    </div>
+  </div>
+  
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+    <div id="loadingText">アップロード中...</div>
+  </div>
+
+  <!-- Cropper.jsのスクリプトを追加 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+
+  <script>
+    let selectedFile = null;
+    let cropper = null;
+
+    // ファイルサイズをMB単位で表示する関数
+    function formatFileSize(bytes) {
+      return (bytes / (1024 * 1024)).toFixed(2) + 'MB';
+    }
+
+    document.getElementById('fileInput').addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const validImageTypes = ['image/jpeg', 'image/png'];
+      const validVideoTypes = ['video/quicktime', 'video/mp4'];
+      const isImage = validImageTypes.includes(file.type);
+      const isVideo = validVideoTypes.includes(file.type);
+      
+      if (!isImage && !isVideo) {
+        showError('対応していないファイル形式です。');
+        return;
+      }
+      
+      const maxImageSize = 8 * 1024 * 1024; // 8MB
+      const maxVideoSize = 30 * 1024 * 1024; // 30MB
+      
+      // ファイルサイズチェック
+      if (isImage && file.size > maxImageSize) {
+        showError(`画像ファイルは8MB以内にしてください。\n現在のサイズ: ${formatFileSize(file.size)}`);
+        resetFileInput();
+        return;
+      }
+      
+      if (isVideo && file.size > maxVideoSize) {
+        showError(`動画ファイルは30MB以内にしてください。\n現在のサイズ: ${formatFileSize(file.size)}`);
+        resetFileInput();
+        return;
+      }
+      
+      try {
+        const preview = document.getElementById('preview');
+        const imagePreview = document.getElementById('imagePreview');
+        const videoPreview = document.getElementById('videoPreview');
+        const cropContainer = document.getElementById('cropContainer');
+        
+        if (isImage) {
+          // 画像の場合はクロップ機能を表示
+          cropContainer.style.display = 'block';
+          preview.classList.add('hidden');
+          
+          const cropImage = document.getElementById('cropImage');
+          cropImage.src = URL.createObjectURL(file);
+          
+          // 既存のCropperインスタンスを破棄
+          if (cropper) {
+            cropper.destroy();
+          }
+          
+          // 新しいCropperインスタンスを作成
+          cropper = new Cropper(cropImage, {
+            aspectRatio: NaN, // 初期状態ではアスペクト比を固定しない
+            viewMode: 1,
+            autoCropArea: 1,
+            responsive: true,
+            restore: false,
+            guides: true,
+            center: true,
+            highlight: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false,
+          });
+
+          // トリミングなしボタンをアクティブに設定
+          document.querySelector('[data-ratio="0"]').classList.add('active');
+        } else {
+          // 動画の場合は通常のプレビュー
+          cropContainer.style.display = 'none';
+          preview.classList.remove('hidden');
+          imagePreview.classList.add('hidden');
+          videoPreview.classList.remove('hidden');
+          videoPreview.src = URL.createObjectURL(file);
+        }
+        
+        selectedFile = file;
+        document.getElementById('uploadButton').disabled = false;
+        hideError();
+      } catch (error) {
+        showError('ファイルのプレビューに失敗しました: ' + error.message);
+        resetFileInput();
+      }
+    });
+
+    // アスペクト比ボタンのイベントリスナー
+    document.querySelectorAll('.aspect-ratio-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const ratio = parseFloat(this.dataset.ratio);
+        
+        // トリミングなしの場合
+        if (ratio === 0) {
+          if (cropper) {
+            cropper.setAspectRatio(NaN);
+          }
+        } else {
+          // トリミングを適用する場合
+          if (cropper) {
+            cropper.setAspectRatio(ratio);
+          }
+        }
+        
+        // アクティブなボタンのスタイルを更新
+        document.querySelectorAll('.aspect-ratio-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        this.classList.add('active');
+      });
+    });
+
+    // トリミング適用ボタンのイベントリスナー
+    document.getElementById('applyCrop').addEventListener('click', function() {
+      if (cropper) {
+        const canvas = cropper.getCroppedCanvas();
+        // トリミング結果をプレビューに表示
+        const preview = document.getElementById('preview');
+        const imagePreview = document.getElementById('imagePreview');
+        const cropContainer = document.getElementById('cropContainer');
+        
+        preview.classList.remove('hidden');
+        imagePreview.classList.remove('hidden');
+        imagePreview.src = canvas.toDataURL();
+        cropContainer.style.display = 'none';
+        
+        // トリミングした画像をファイルとして保存
+        canvas.toBlob(function(blob) {
+          selectedFile = new File([blob], 'cropped_' + selectedFile.name, {
+            type: 'image/jpeg',
+            lastModified: new Date().getTime()
+          });
+        }, 'image/jpeg');
+      }
+    });
+
+    // トリミングキャンセルボタンのイベントリスナー
+    document.getElementById('cancelCrop').addEventListener('click', function() {
+      const preview = document.getElementById('preview');
+      const imagePreview = document.getElementById('imagePreview');
+      const cropContainer = document.getElementById('cropContainer');
+      
+      preview.classList.remove('hidden');
+      imagePreview.classList.remove('hidden');
+      imagePreview.src = URL.createObjectURL(selectedFile);
+      cropContainer.style.display = 'none';
+    });
+
+    // その他の既存の関数
+    function resetFileInput() {
+      document.getElementById('fileInput').value = '';
+      selectedFile = null;
+      document.getElementById('uploadButton').disabled = true;
+      document.getElementById('preview').classList.add('hidden');
+      document.getElementById('cropContainer').style.display = 'none';
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+    }
+
+    function showError(message) {
+      const error = document.getElementById('error');
+      error.textContent = message;
+      error.classList.remove('hidden');
+      document.getElementById('uploadButton').disabled = true;
+    }
+
+    function hideError() {
+      document.getElementById('error').classList.add('hidden');
+    }
+
+    function showLoading() {
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('mainContent').classList.add('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('mainContent').classList.remove('hidden');
+    }
+
+    // アップロード処理
+    function uploadFile() {
+      if (!selectedFile) {
+        showError('ファイルが選択されていません。');
+        return;
+      }
+      
+      showLoading();
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const base64Data = e.target.result.split(',')[1];
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              google.script.host.close();
+            } else {
+              hideLoading();
+              showError('アップロードに失敗しました: ' + (result.error || '不明なエラー'));
+            }
+          })
+          .withFailureHandler(function(error) {
+            hideLoading();
+            showError('アップロードに失敗しました: ' + error.toString());
+          })
+          .uploadFile(base64Data, selectedFile.name, selectedFile.type);
+      };
+      
+      reader.onerror = function(error) {
+        hideLoading();
+        showError('ファイルの読み込みに失敗しました: ' + error.toString());
+      };
+      
+      try {
+        reader.readAsDataURL(selectedFile);
+      } catch (error) {
+        hideLoading();
+        showError('ファイルの処理に失敗しました: ' + error.toString());
+      }
+    }
+
+  </script>
+</body>
+</html>

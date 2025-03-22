@@ -1,0 +1,33 @@
+{
+  "timeZone": "Asia/Tokyo",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "OAuth2",
+        "libraryId": "1B7FSrk5Zi6L1rSxxTDgDEUsPzlukDsi4KGuTMorsTQHhGBzBkMun4iDF",
+        "version": "43"
+      },
+      {
+        "userSymbol": "ImgApp",
+        "libraryId": "1T03nYHRho6XMWYcaumClcWr6ble65mAT8OLJqRFJ5lukPVogAN2NDl-y",
+        "version": "8"
+      },
+      {
+        "userSymbol": "OAuth1",
+        "libraryId": "1CXDCY5sqT9ph64fFwSzVtXnbjpSfWdRymafDrtIZ7Z_hwysTY7IIhi7s",
+        "version": "18"
+      },
+      {
+        "userSymbol": "bulkpostkun",
+        "libraryId": "1h3TuL1VYPtpfCJIV4h05YsKprUzjl0eLVsbILurRXXoBLi8kB8e37uML",
+        "version": "3"
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "MYSELF"
+  }
+}

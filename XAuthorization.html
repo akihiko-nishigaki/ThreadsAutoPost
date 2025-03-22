@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .title {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 24px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #1da1f2;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 16px;
+    }
+    .button:hover {
+      background-color: #0c84c6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">Twitterアカウント認証</h1>
+    <p>以下のボタンをクリックして認証を進めてください。</p>
+    <a href="<?= authorizationURL ?>" target="_blank" class="button">アカウント認証</a>
+  </div>
+</body>
+</html>
