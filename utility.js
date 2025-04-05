@@ -81,6 +81,7 @@ function getSystemProperty(){
   // システムシートを取得
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS_NAME.SYSTEM);
 
+    // プロパティを取得する
   let uploadImageFoloderId = sheet.getRange(PROPERTY_CELL.UL_IMAGE_FOLDER_ID).getValue();
   let uploadVideoFoloderId = sheet.getRange(PROPERTY_CELL.UL_VIDEO_FOLDER_ID).getValue();
   let xApiClient = sheet.getRange(PROPERTY_CELL.X_CLIENT_KEY).getValue();
@@ -101,13 +102,16 @@ function getSystemProperty(){
   let threadsClientSecret = sheet.getRange(PROPERTY_CELL.THREADS_CLIENT_SECRET).getValue();
   let selectedSheetName = sheet.getRange(PROPERTY_CELL.SELECTED_SHEET_NAME).getValue();
 
+  
   return{
     uploadImageFoloderId: uploadImageFoloderId,
     uploadVideoFoloderId: uploadVideoFoloderId,
     xApiClient: xApiClient,
     xApiClientSecret: xApiClientSecret,
     xApiCodeVerifier: xApiCodeVerifier,
+    //xCodeVerifier: xApiCodeVerifier,
     xApiOauth2: xApiOauth2,
+    //xOauth2Twitter: xApiOauth2,
     xUserId: xUserId,
     instaAppId: instaAppId,
     instaAppSecret: instaAppSecret,

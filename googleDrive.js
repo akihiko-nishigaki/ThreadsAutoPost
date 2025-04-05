@@ -8,21 +8,36 @@ const IMAGE_FOLDER_NAME = '投稿用画像';
 const VIDEO_FOLDER_NAME = '投稿用動画';
 
 function showFileUploadDialog() {
-  // 選択しているシートを記録する：予約投稿シート
-  setSystemProperty(PROPERTY_CELL.SELECTED_SHEET_NAME, SHEETS_NAME.RESERVATION);
-  const html = HtmlService.createHtmlOutputFromFile('Index')
-    .setWidth(600)
-    .setHeight(400);
-  SpreadsheetApp.getUi().showModalDialog(html, 'ファイルアップロード');
+  try {
+    // 選択しているシートを記録する：予約投稿シート
+    setSystemPropertyValue(PROPERTY_CELL.SELECTED_SHEET_NAME, SHEETS_NAME.RESERVATION);
+    Logger.log('選択シートを設定: ' + SHEETS_NAME.RESERVATION);
+    
+    
+    const html = HtmlService.createHtmlOutputFromFile('Index')
+      .setWidth(600)
+      .setHeight(400);
+    SpreadsheetApp.getUi().showModalDialog(html, 'ファイルアップロード');
+  } catch (error) {
+    console.error('ダイアログ表示エラー:', error);
+    throw error;
+  }
 }
 
 function showFileUploadDialogAutoSheet() {
-  // 選択しているシートを記録する：予約投稿シート
-  setSystemProperty(PROPERTY_CELL.SELECTED_SHEET_NAME, SHEETS_NAME.AUTO);
-  const html = HtmlService.createHtmlOutputFromFile('Index')
-    .setWidth(800)
-    .setHeight(800);
-  SpreadsheetApp.getUi().showModalDialog(html, 'ファイルアップロード');
+  try {
+    // 選択しているシートを記録する：予約投稿シート
+    setSystemPropertyValue(PROPERTY_CELL.SELECTED_SHEET_NAME, SHEETS_NAME.AUTO);
+    Logger.log('選択シートを設定: ' + SHEETS_NAME.AUTO);
+    
+    const html = HtmlService.createHtmlOutputFromFile('Index')
+      .setWidth(800)
+      .setHeight(800);
+    SpreadsheetApp.getUi().showModalDialog(html, 'ファイルアップロード');
+  } catch (error) {
+    console.error('ダイアログ表示エラー:', error);
+    throw error;
+  }
 }
 
 
@@ -149,18 +164,19 @@ function handleImageUpload(blob, folderId) {
         
         url = resizedFile.getUrl();
         console.log('Resize and upload completed successfully');
-        
-        // URLをセルに書き込み
-        // const activeCell = SpreadsheetApp.getActiveSheet().getActiveCell();
-        // activeCell.setValue(url);
       } catch (resizeError) {
         tempFile.setTrashed(true);
         throw new Error('画像のリサイズに失敗しました: ' + resizeError.message);
       }
     }        
 
-    // 現在選択中の行の添付ファイルセルへURLを書き込む
-    setAttachmentFileUrl(url);
+    try {
+      // 現在選択中の行の添付ファイルセルへURLを書き込む
+      setAttachmentFileUrl(url);
+    } catch (error) {
+      console.error('セルの更新に失敗しました:', error);
+      // エラーが発生しても、アップロード自体は成功として扱う
+    }
 
     return {
       success: true,
@@ -175,33 +191,62 @@ function handleImageUpload(blob, folderId) {
 /***********************************
  * アップロードしたファイルのURLをセットする
  ***********************************/
-function setAttachmentFileUrl(url){
-  // 現在選択中の行の添付ファイルセルへURLを書き込む
-  const prop = getSystemProperty();
-  let ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(prop.selectedSheetName);
-  let currentRow = sheet.getActiveCell().getRowIndex();
-  let attachmentValues = sheet.getRange(currentRow
-                                      , CONFIG.ATTACH_START_COLUMN + CONFIG.SHEET_ARRAY_COL_DIF
-                                      , 1
-                                      , CONFIG.ATTACH_END_COLUMN - CONFIG.ATTACH_START_COLUMN + 1).getValues();
-
-  // Xの添付数を取得する
-  let attachmentXCount = sheet.getRange(currentRow, CONFIG.ATTACH_COUNT_X_COL + CONFIG.SHEET_ARRAY_COL_DIF).getValue();
-
-  // 添付ファイル領域の列へアップロードしたファイルのURLをセットする
-  for(let currentCol = 0 ; currentCol < attachmentValues[0].length ; currentCol += CONFIG.ATTACH_COLUMN_DIF){
-
-    // 添付ファイルが入っていない箇所へセットする
-    if(attachmentValues[0][currentCol] == ""){
-      sheet.getRange(currentRow, currentCol + CONFIG.ATTACH_START_COLUMN + CONFIG.SHEET_ARRAY_COL_DIF).setValue(url);
-
-      // Xの添付数が4を超えていない場合はチェックを入れる
-      if(attachmentXCount < 4){
-        sheet.getRange(currentRow, currentCol + CONFIG.ATTACH_START_COLUMN + CONFIG.SHEET_ARRAY_COL_DIF + CONFIG.ATTACH_X_CHECK_DIF).setValue(true);
-      }
-      break;
+function setAttachmentFileUrl(url) {
+  try {
+    // システムプロパティを取得
+    const prop = getSystemProperty();
+    Logger.log('取得したシステムプロパティ:', prop);
+    Logger.log('選択中のシート名:', prop.xApiClientSecret);
+    
+    if (!prop || !prop.selectedSheetName) {
+      console.error('選択中のシート名が取得できません');
+      console.error('システムプロパティ:', prop);
+      return;
     }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(prop.selectedSheetName);
+    if (!sheet) {
+      console.error('シートが見つかりません:', prop.selectedSheetName);
+      return;
+    }
+
+    // アクティブなセルが取得できない場合は、最終行の次の行を使用
+    let currentRow;
+    const activeCell = sheet.getActiveCell();
+    if (!activeCell) {
+      currentRow = sheet.getLastRow() + 1;
+      console.log('アクティブなセルが見つからないため、最終行の次の行を使用:', currentRow);
+    } else {
+      currentRow = activeCell.getRowIndex();
+    }
+
+    let attachmentValues = sheet.getRange(currentRow
+                                        , CONFIG.ATTACH_START_COLUMN + CONFIG.SHEET_ARRAY_COL_DIF
+                                        , 1
+                                        , CONFIG.ATTACH_END_COLUMN - CONFIG.ATTACH_START_COLUMN + 1).getValues();
+
+    // Xの添付数を取得する
+    let attachmentXCount = sheet.getRange(currentRow, CONFIG.ATTACH_COUNT_X_COL + CONFIG.SHEET_ARRAY_COL_DIF).getValue();
+
+    // 添付ファイル領域の列へアップロードしたファイルのURLをセットする
+    for(let currentCol = 0 ; currentCol < attachmentValues[0].length ; currentCol += CONFIG.ATTACH_COLUMN_DIF){
+      // 添付ファイルが入っていない箇所へセットする
+      if(attachmentValues[0][currentCol] == ""){
+        sheet.getRange(currentRow, currentCol + CONFIG.ATTACH_START_COLUMN + CONFIG.SHEET_ARRAY_COL_DIF).setValue(url);
+
+        // Xの添付数が4を超えていない場合はチェックを入れる
+        if(attachmentXCount < 4){
+          sheet.getRange(currentRow, currentCol + CONFIG.ATTACH_START_COLUMN + CONFIG.SHEET_ARRAY_COL_DIF + CONFIG.ATTACH_X_CHECK_DIF).setValue(true);
+        }
+        break;
+      }
+    }
+    
+    Logger.log('ファイルURLを設定完了:', url);
+  } catch (error) {
+    console.error('setAttachmentFileUrl でエラーが発生しました:', error);
+    throw error;
   }
 }
 

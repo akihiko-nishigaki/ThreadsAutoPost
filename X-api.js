@@ -962,24 +962,24 @@ function extractTweetId(url) {
   }
 }
 
-function getSystemProperty() {
-  // スプレッドシートを取得する
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+// function getSystemProperty() {
+//   // スプレッドシートを取得する
+//   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // システムシートを取得する
-  const systemSheet = ss.getSheetByName(SHEETS_NAME.SYSTEM);
+//   // システムシートを取得する
+//   const systemSheet = ss.getSheetByName(SHEETS_NAME.SYSTEM);
   
-  // プロパティを取得する
-  const prop = {
-    xApiClient: systemSheet.getRange(PROPERTY_CELL.X_CLIENT_KEY).getValue(),
-    xApiClientSecret: systemSheet.getRange(PROPERTY_CELL.X_CLIENT_SECRET).getValue(),
-    xOauth2Twitter: systemSheet.getRange(PROPERTY_CELL.X_OAUTH2_TWITTER).getValue(),
-    xCodeVerifier: systemSheet.getRange(PROPERTY_CELL.X_CODE_VERIFIER).getValue(),
-    xUserId: systemSheet.getRange(PROPERTY_CELL.X_USER_ID).getValue()
-  };
+//   // プロパティを取得する
+//   const prop = {
+//     xApiClient: systemSheet.getRange(PROPERTY_CELL.X_CLIENT_KEY).getValue(),
+//     xApiClientSecret: systemSheet.getRange(PROPERTY_CELL.X_CLIENT_SECRET).getValue(),
+//     xOauth2Twitter: systemSheet.getRange(PROPERTY_CELL.X_OAUTH2_TWITTER).getValue(),
+//     xCodeVerifier: systemSheet.getRange(PROPERTY_CELL.X_CODE_VERIFIER).getValue(),
+//     xUserId: systemSheet.getRange(PROPERTY_CELL.X_USER_ID).getValue()
+//   };
   
-  return prop;
-}
+//   return prop;
+// }
 
 // 特定のプロパティを取得する関数
 function getSystemPropertyValue(key) {
