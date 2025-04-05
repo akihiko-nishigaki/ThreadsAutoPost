@@ -83,8 +83,10 @@ function getSystemProperty(){
 
   let uploadImageFoloderId = sheet.getRange(PROPERTY_CELL.UL_IMAGE_FOLDER_ID).getValue();
   let uploadVideoFoloderId = sheet.getRange(PROPERTY_CELL.UL_VIDEO_FOLDER_ID).getValue();
-  let xApiKey = sheet.getRange(PROPERTY_CELL.X_API_KEY).getValue();
-  let xApiSecret = sheet.getRange(PROPERTY_CELL.X_API_KEY_SECRET).getValue();
+  let xApiClient = sheet.getRange(PROPERTY_CELL.X_CLIENT_KEY).getValue();
+  let xApiClientSecret = sheet.getRange(PROPERTY_CELL.X_CLIENT_SECRET).getValue();
+  let xApiCodeVerifier = sheet.getRange(PROPERTY_CELL.X_CODE_VERIFIER).getValue();
+  let xApiOauth2 = sheet.getRange(PROPERTY_CELL.X_OAUTH2_TWITTER).getValue();
   let xUserId = sheet.getRange(PROPERTY_CELL.X_USER_ID).getValue();
   let instaAppId = sheet.getRange(PROPERTY_CELL.INSTA_APP_ID).getValue();
   let instaAppSecret = sheet.getRange(PROPERTY_CELL.INSTA_APP_SECRET).getValue();
@@ -102,8 +104,10 @@ function getSystemProperty(){
   return{
     uploadImageFoloderId: uploadImageFoloderId,
     uploadVideoFoloderId: uploadVideoFoloderId,
-    xApiKey: xApiKey,
-    xApiSecret: xApiSecret,
+    xApiClient: xApiClient,
+    xApiClientSecret: xApiClientSecret,
+    xApiCodeVerifier: xApiCodeVerifier,
+    xApiOauth2: xApiOauth2,
     xUserId: xUserId,
     instaAppId: instaAppId,
     instaAppSecret: instaAppSecret,

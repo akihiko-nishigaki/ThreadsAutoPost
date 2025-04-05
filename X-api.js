@@ -1,7 +1,7 @@
 // Twitter API関連URL
 const ACCESS_TOKEN_URL = "https://api.twitter.com/2/oauth2/token";
 const REQUEST_TOKEN_URL = "https://api.twitter.com/2/oauth2/authorize";
-const AUTHORIZE_URL = "https://api.twitter.com/2/oauth2/authorize";
+const AUTHORIZE_URL = "https://twitter.com/i/oauth2/authorize";
 const X_POST_URL_TEMPLATE = "https://x.com/nishi_hiko117/status/1865580350833119380"
 const SERVICE_NAME = "twitter";
 
@@ -10,18 +10,22 @@ const SERVICE_NAME = "twitter";
  */
 function authorizeLinkForNewTwitterBotWithImage() {
   const service = getXService();
+
+  // システムプロパティを取得
+  const prop = getSystemProperty();
+
+
   if (!service) {
     return;
   }
   const ui = SpreadsheetApp.getUi();
 
   if (!service.hasAccess()) {
-    const authorizationURL = service.authorize();
+    const authorizationURL = getAuthorizationUrl();
     const template = HtmlService.createTemplateFromFile("XAuthorization");
     template.authorizationURL = authorizationURL;
     const html = template.evaluate().setWidth(600).setHeight(400);
     SpreadsheetApp.getUi().showModalDialog(html, "Twitterアカウント認証");
-
   } else {
     ui.alert("アカウント認証はすでに許可されています。");
   }
@@ -32,20 +36,115 @@ function authorizeLinkForNewTwitterBotWithImage() {
  * @param {Object} request eパラメータ
  * @returns {HtmlOutput} 認証結果HTML出力
  */
-function authCallbackForNewTwitterBotWithImage(e) {
-  const service = getXService();
-  if (service === null) {
-    return;
-  }
-  const authorized = service.handleCallback(e);
-  if (authorized) {
-    // アカウントステータスを更新する
-    setSnsAccountSettingStatus(CONFIG.CELL_SETTING_STATUS_X); // ステータス：設定済
-    setSnsCheck(CONFIG.CELL_SETTING_CHECKBOX_X);  // チェックボックスオン
+function authCallback(request) {
+  
+  const prop = getSystemProperty();
 
-    return HtmlService.createHtmlOutput("認証成功！このウィンドウを閉じて、スクリプトエディタに戻ってください。");
-  } else {
-    return HtmlService.createHtmlOutput("認証に失敗しました。もう一度お試しください。");
+  // リクエストパラメータのログ出力
+  Logger.log('コールバックリクエスト: ' + JSON.stringify(request.parameter));
+  
+  var service = getXService();
+  var spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+  var codeVerifier = getSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER);
+  var clientId = prop.xApiClient;
+  var clientSecret = prop.xApiClientSecret;
+  var redirectUri = getRedirectUri();
+  
+  Logger.log('コールバック処理 - code_verifier: ' + codeVerifier);
+  Logger.log('リダイレクトURI: ' + redirectUri);
+  
+  // code_verifierを直接URLパラメーターとして追加
+  var payload = {
+    'code': request.parameter.code,
+    'code_verifier': codeVerifier,
+    'grant_type': 'authorization_code',
+    'redirect_uri': redirectUri,
+    'client_id': clientId
+  };
+  
+  // トークンリクエストのオプションを設定
+  var tokenOptions = {
+    'method': 'post',
+    'contentType': 'application/x-www-form-urlencoded',
+    'payload': payload,
+    'headers': {
+      'Authorization': 'Basic ' + Utilities.base64Encode(clientId + ':' + clientSecret)
+    },
+    'muteHttpExceptions': true
+  };
+  
+  try {
+    // リクエスト情報をログ出力（デバッグ用）
+    Logger.log('トークンリクエスト URL: https://api.twitter.com/2/oauth2/token');
+    Logger.log('トークンリクエスト ペイロード: ' + JSON.stringify(payload));
+    Logger.log('トークンリクエスト ヘッダー: ' + JSON.stringify(tokenOptions.headers));
+    
+    // 直接トークンをリクエスト
+    var response = UrlFetchApp.fetch('https://api.twitter.com/2/oauth2/token', tokenOptions);
+    var responseCode = response.getResponseCode();
+    var responseText = response.getContentText();
+    
+    Logger.log('トークンレスポンス コード: ' + responseCode);
+    Logger.log('トークンレスポンス: ' + responseText);
+    
+    // レスポンスのパース
+    if (responseCode >= 200 && responseCode < 300) {
+      try {
+        var tokenData = JSON.parse(responseText);
+        
+        if (tokenData.access_token) {
+          // トークンを保存
+          setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, JSON.stringify({
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_in: tokenData.expires_in,
+            timestamp: new Date().getTime()
+          }));
+          
+          return HtmlService.createHtmlOutput(
+            '<h3>認証が成功しました</h3>' +
+            '<p>このタブを閉じて、スクリプトに戻ってください。</p>' +
+            '<p>アクセストークンが正常に取得されました。</p>'
+          );
+        } else {
+          return HtmlService.createHtmlOutput(
+            '<h3>認証エラー</h3>' +
+            '<p>アクセストークンが取得できませんでした。</p>' +
+            '<pre>' + JSON.stringify(tokenData, null, 2) + '</pre>'
+          );
+        }
+      } catch (parseError) {
+        Logger.log('JSONパースエラー: ' + parseError);
+        return HtmlService.createHtmlOutput(
+          '<h3>レスポンス解析エラー</h3>' +
+          '<p>APIからのレスポンスを解析できませんでした。</p>' +
+          '<p>エラー: ' + parseError + '</p>' +
+          '<p>レスポンス: ' + responseText + '</p>'
+        );
+      }
+    } else {
+      // エラーレスポンスの処理
+      return HtmlService.createHtmlOutput(
+        '<h3>APIエラー</h3>' +
+        '<p>ステータスコード: ' + responseCode + '</p>' +
+        '<p>エラーメッセージ: ' + responseText + '</p>' +
+        '<p>このエラーについては、X Developer Portalの設定を確認してください。</p>' +
+        '<p>特に、リダイレクトURI: <code>' + getRedirectUri() + '</code> が正しく設定されていることを確認してください。</p>'
+      );
+    }
+  } catch (e) {
+    Logger.log('トークン取得エラー: ' + e.toString());
+    return HtmlService.createHtmlOutput(
+      '<h3>リクエストエラー</h3>' +
+      '<p>APIへのリクエスト中にエラーが発生しました。</p>' +
+      '<p>エラー: ' + e.toString() + '</p>' +
+      '<p>以下の点を確認してください：</p>' +
+      '<ul>' +
+      '<li>スクリプトプロパティにCLIENT_IDとCLIENT_SECRETが正しく設定されているか</li>' +
+      '<li>X Developer PortalでリダイレクトURLが <code>' + getRedirectUri() + '</code> として登録されているか</li>' +
+      '<li>TwitterアプリでOAuth 2.0とPKCEが有効になっているか</li>' +
+      '</ul>'
+    );
   }
 }
 
@@ -56,7 +155,7 @@ function setUserId(){
   let userId = getUserIdFromApiKey();
 
   // システムプロパティを記録する
-  setSystemProperty(PROPERTY_CELL.X_USER_ID, userId);  // XユーザーID
+  setSystemPropertyValue(PROPERTY_CELL.X_USER_ID, userId);  // XユーザーID
   
   const ui = SpreadsheetApp.getUi();
   ui.alert("ユーザーIDの設定が完了しました。");
@@ -67,50 +166,119 @@ function setUserId(){
 //　ポスト情報送信用処理
 //********************************
 function getXService() {
-  pkceChallengeVerifier();
-
-  // プロパティを取得
+  // システムプロパティを取得
   const prop = getSystemProperty();
+  
+  // スプレッドシートIDを取得
+  var spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+  
+  // アクセストークンがすでに保存されているか確認
+  var tokenData = getSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER);
+  Logger.log('保存されているトークンデータ: ' + tokenData);
 
-  if (prop.xApiKey === "" || prop.xApiSecret === "") {
-    throw new Error("設定シートに記載されているAPI_KEYまたはAPI_SECRETが正しく設定されていません。");
+  if (tokenData) {
+    try {
+      tokenData = JSON.parse(tokenData);
+      if (tokenData.access_token) {
+        var service = {
+          hasAccess: function() { return true; },
+          getAccessToken: function() { return tokenData.access_token; },
+          reset: function() { 
+            setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, "");
+            setSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER, "");
+          }
+        };
+        return service;
+      }
+    } catch (e) {
+      Logger.log('トークンデータの解析エラー: ' + e);
+    }
   }
-
-  return OAuth2.createService(SERVICE_NAME)
-    .setTokenUrl(ACCESS_TOKEN_URL)
-    .setAuthorizationBaseUrl(AUTHORIZE_URL)
-    .setClientId(prop.xApiKey)
-    .setClientSecret(prop.xApiSecret)
-    .setCallbackFunction("authCallbackForNewTwitterBotWithImage")
-    .setPropertyStore(PropertiesService.getScriptProperties())
-    .setScope("tweet.read tweet.write users.read offline.access")
+  
+  // 通常のサービス作成（認証前または再認証が必要な場合）
+  return OAuth2.createService('twitter.' + spreadsheetId)  // サービス名にもスプレッドシートIDを含める
+    .setAuthorizationBaseUrl('https://twitter.com/i/oauth2/authorize')
+    .setTokenUrl('https://api.twitter.com/2/oauth2/token')
+    .setClientId(prop.xApiClient)
+    .setClientSecret(prop.xApiClientSecret)
+    .setCallbackFunction('authCallback')
+    .setPropertyStore(PropertiesService.getScriptProperties())  // UserPropertiesからScriptPropertiesに変更
+    .setScope('tweet.read tweet.write users.read offline.access')
+    .setParam('response_type', 'code')
+    .setParam('code_challenge_method', 'S256')
+    .setRedirectUri(getRedirectUri())
     .setTokenHeaders({
-      "Authorization": "Basic " + Utilities.base64Encode(prop.xApiKey + ":" + prop.xApiSecret)
+      'Authorization': 'Basic ' + Utilities.base64Encode(
+        prop.xApiClient + ':' + 
+        prop.xApiClientSecret
+      ),
+      'Content-Type': 'application/x-www-form-urlencoded'
     });
 }
 
-//********************************
-//　認証確認チェック
-//********************************
-function pkceChallengeVerifier() {
-  var userProps = PropertiesService.getScriptProperties();
-  if (!userProps.getProperty("code_verifier")) {
-    var verifier = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
-    for (var i = 0; i < 128; i++) {
-      verifier += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-
-    var sha256Hash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, verifier)
-
-    var challenge = Utilities.base64Encode(sha256Hash)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '')
-    userProps.setProperty("code_verifier", verifier)
-    userProps.setProperty("code_challenge", challenge)
+// PKCE用のcode_verifierを生成
+function generateCodeVerifier() {
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  var verifier = '';
+  for (var i = 0; i < 128; i++) {
+    verifier += chars.charAt(Math.floor(Math.random() * chars.length));
   }
+  return verifier;
+}
+
+// PKCE用のcode_challengeを生成
+function generateCodeChallenge(verifier) {
+  var rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, verifier);
+  var encoded = Utilities.base64Encode(rawHash);
+  // Base64 URL safe対応
+  return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// リダイレクトURIを取得する関数
+function getRedirectUri() {
+  // スクリプトIDの取得
+  var scriptId = ScriptApp.getScriptId();
+  // リダイレクトURIの組み立て
+  return 'https://script.google.com/macros/d/' + scriptId + '/usercallback';
+}
+
+// 認証URLを取得するための関数
+function getAuthorizationUrl() {
+  // まず古い認証情報をクリア
+  resetAuth();
+
+  // システムプロパティを取得
+  const prop = getSystemProperty();
+  
+  // サービスを取得
+  var service = getXService();
+  
+  // PKCE用のcode_challengeを生成
+  var codeVerifier = generateCodeVerifier();
+  var codeChallenge = generateCodeChallenge(codeVerifier);
+  
+  // code_verifierを保存（デバッグ用にログも出力）
+  setSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER, codeVerifier);
+  Logger.log('生成されたcode_verifier: ' + codeVerifier);
+  Logger.log('生成されたcode_challenge: ' + codeChallenge);
+  
+  // code_challengeを設定
+  service.setParam('code_challenge', codeChallenge);
+  
+  var authUrl = service.getAuthorizationUrl();
+  Logger.log('認証URLを開いてください: %s', authUrl);
+  return authUrl;
+}
+
+// 認証状態をリセット（トラブルシューティング用）
+function resetAuth() {
+  // ユーザープロパティから認証情報を削除
+  setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, "");
+  setSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER, "");
+  
+  Logger.log('認証状態をリセットしました。');
+  return '認証状態をリセットしました。';
 }
 
 // 複数の画像をアップロードする関数
@@ -170,7 +338,6 @@ function uploadImagesForX(attachmentInfo, index) {
     Logger.log(`JPEG Signature Check: ${isJpeg}`);
 
     // Base64エンコード前にバイナリデータを確認
-    // const base64Data = Utilities.base64Encode(imageBlob.getBytes());
     const base64Data = Utilities.base64Encode(imageBytes);
     Logger.log(`Base64 Length: ${base64Data.length}`);
 
@@ -725,13 +892,13 @@ function logResponse(response) {
  * サービスクリア（認証解除）
  */
 function clearServiceForNewTwitterBotWithImage() {
-  OAuth2.createService(CONFIG.X_SERVICE_NAME)
-    .setPropertyStore(PropertiesService.getScriptProperties())
-    .reset();
-
   // アカウントステータスを更新する
   clearSnsAccountSettingStatus(CONFIG.CELL_SETTING_STATUS_X); // ステータス：設定済
   clearSnsCheck(CONFIG.CELL_SETTING_CHECKBOX_X);  // チェックボックスオン
+  
+  // 認証情報をクリア
+  setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, "");
+  setSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER, "");
 }
 
 /**
@@ -793,4 +960,38 @@ function extractTweetId(url) {
     console.error('エラーが発生しました:', error);
     return null;
   }
+}
+
+function getSystemProperty() {
+  // スプレッドシートを取得する
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // システムシートを取得する
+  const systemSheet = ss.getSheetByName(SHEETS_NAME.SYSTEM);
+  
+  // プロパティを取得する
+  const prop = {
+    xApiClient: systemSheet.getRange(PROPERTY_CELL.X_CLIENT_KEY).getValue(),
+    xApiClientSecret: systemSheet.getRange(PROPERTY_CELL.X_CLIENT_SECRET).getValue(),
+    xOauth2Twitter: systemSheet.getRange(PROPERTY_CELL.X_OAUTH2_TWITTER).getValue(),
+    xCodeVerifier: systemSheet.getRange(PROPERTY_CELL.X_CODE_VERIFIER).getValue(),
+    xUserId: systemSheet.getRange(PROPERTY_CELL.X_USER_ID).getValue()
+  };
+  
+  return prop;
+}
+
+// 特定のプロパティを取得する関数
+function getSystemPropertyValue(key) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const systemSheet = ss.getSheetByName(SHEETS_NAME.SYSTEM);
+  return systemSheet.getRange(key).getValue();
+}
+
+// 特定のプロパティを設定する関数
+function setSystemPropertyValue(key, value) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const systemSheet = ss.getSheetByName(SHEETS_NAME.SYSTEM);
+  systemSheet.getRange(key).setValue(value);
+  Logger.log('プロパティ設定しました。Key:' + key + '、Value:' + value);
 }
