@@ -14,7 +14,7 @@ function showFileUploadDialog() {
     Logger.log('選択シートを設定: ' + SHEETS_NAME.RESERVATION);
     
     
-    const html = HtmlService.createHtmlOutputFromFile('Index')
+    const html = HtmlService.createHtmlOutputFromFile('fileupload')
       .setWidth(600)
       .setHeight(400);
     SpreadsheetApp.getUi().showModalDialog(html, 'ファイルアップロード');
@@ -30,7 +30,7 @@ function showFileUploadDialogAutoSheet() {
     setSystemPropertyValue(PROPERTY_CELL.SELECTED_SHEET_NAME, SHEETS_NAME.AUTO);
     Logger.log('選択シートを設定: ' + SHEETS_NAME.AUTO);
     
-    const html = HtmlService.createHtmlOutputFromFile('Index')
+    const html = HtmlService.createHtmlOutputFromFile('fileupload')
       .setWidth(800)
       .setHeight(800);
     SpreadsheetApp.getUi().showModalDialog(html, 'ファイルアップロード');
