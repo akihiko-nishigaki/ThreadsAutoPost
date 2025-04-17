@@ -1,7 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SNS投稿アプリケーション</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
   <style>
     body {
@@ -194,288 +198,302 @@
 
   </style>
 </head>
-<body>
-  <div class="container">
-    <h1 class="title">ファイルアップロード</h1>
-    <div id="mainContent">
-      <div class="upload-area">
-        <div class="file-input-wrapper">
-          <label for="fileInput" class="file-input-label">ファイルを選択</label>
-          <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.mov,.mp4">
-        </div>
-        <div class="file-info">
-          対応形式: JPG, PNG, MOV, MP4<br>
-          サイズ制限: 画像 8MB以内, 動画 30MB以内
-        </div>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm mb-8">
+      <div class="container mx-auto px-4 py-4">
+        <h1 class="text-2xl font-bold text-gray-800 text-center">SNS投稿アプリケーション</h1>
       </div>
-      
-      <!-- クロップ用のコンテナ -->
-      <div id="cropContainer" class="crop-container">
-        <div class="crop-buttons">
-          <button class="aspect-ratio-btn" data-ratio="0">トリミングなし</button>
-          <button class="aspect-ratio-btn" data-ratio="1">1:1</button>
-          <button class="aspect-ratio-btn" data-ratio="0.5625">9:16</button>
-          <button class="aspect-ratio-btn" data-ratio="1.7778">16:9</button>
-        </div>
-        <div class="crop-area">
-          <img id="cropImage" src="">
-        </div>
-        <div class="crop-actions">
-          <button id="applyCrop" class="file-input-label">トリミングを適用</button>
-          <button id="cancelCrop" class="file-input-label" style="background-color: #e74c3c;">キャンセル</button>
-        </div>
-      </div>
-      
-      <div id="preview" class="hidden">
-        <img id="imagePreview" class="preview hidden">
-        <video id="videoPreview" class="preview hidden" controls>
-          お使いのブラウザは動画の再生に対応していません。
-        </video>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="space-y-8">
+      <!-- 投稿フォーム -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <form id="postForm" class="space-y-4">
+          <div>
+            <label for="postText" class="block text-sm font-medium text-gray-700 mb-2">投稿内容</label>
+            <textarea
+              id="postText"
+              name="postText"
+              rows="4"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="投稿内容を入力してください（最大280文字）"
+              maxlength="280"
+            ></textarea>
+            <div class="flex justify-between items-center mt-1">
+              <span id="charCount" class="text-sm text-gray-500">0/280</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">投稿先</label>
+            <div class="flex flex-wrap gap-4">
+              <label class="inline-flex items-center">
+                <input type="checkbox" name="platform" value="x" class="form-checkbox h-5 w-5 text-blue-600">
+                <span class="ml-2 text-gray-700">X</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" name="platform" value="threads" class="form-checkbox h-5 w-5 text-blue-600">
+                <span class="ml-2 text-gray-700">Threads</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" name="platform" value="instagram" class="form-checkbox h-5 w-5 text-blue-600">
+                <span class="ml-2 text-gray-700">Instagram</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ファイルアップロード -->
+          <div class="space-y-4">
+            <label class="block text-sm font-medium text-gray-700">メディアファイル</label>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+              <div class="space-y-2">
+                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="text-sm text-gray-600">
+                  <label for="fileInput" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                    <span>ファイルを選択</span>
+                    <input id="fileInput" name="fileInput" type="file" class="sr-only" accept=".jpg,.jpeg,.png,.mov,.mp4">
+                  </label>
+                  <p class="pl-1">またはドラッグ＆ドロップ</p>
+                </div>
+                <p class="text-xs text-gray-500">
+                  対応形式: JPG, PNG, MOV, MP4<br>
+                  サイズ制限: 画像 8MB以内, 動画 30MB以内
+                </p>
+              </div>
+            </div>
+
+            <!-- プレビュー -->
+            <div id="previewContainer" class="hidden">
+              <div class="flex flex-wrap gap-4">
+                <div id="imagePreview" class="hidden">
+                  <img src="" alt="プレビュー" class="max-w-full h-auto rounded-lg shadow-sm">
+                </div>
+                <div id="videoPreview" class="hidden">
+                  <video controls class="max-w-full h-auto rounded-lg shadow-sm">
+                    お使いのブラウザは動画の再生に対応していません。
+                  </video>
+                </div>
+              </div>
+            </div>
+
+            <!-- エラーメッセージ -->
+            <div id="errorMessage" class="hidden text-sm text-red-600 bg-red-50 p-3 rounded-md"></div>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              class="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              投稿する
+            </button>
+          </div>
+        </form>
       </div>
 
-      <div id="error" class="error hidden"></div>
-      <button id="uploadButton" onclick="uploadFile()" disabled>アップロード</button>
-    </div>
-  </div>
-  
-  <div id="loading" class="loading hidden">
-    <div class="spinner"></div>
-    <div id="loadingText">アップロード中...</div>
+      <!-- 投稿履歴 -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">投稿履歴</h2>
+        <div id="postHistory" class="space-y-4">
+          <!-- 投稿履歴はここに動的に追加されます -->
+        </div>
+      </div>
+    </main>
   </div>
 
-  <!-- Cropper.jsのスクリプトを追加 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+  <!-- ローディングオーバーレイ -->
+  <div id="loading" class="fixed inset-0 bg-white bg-opacity-90 flex flex-col justify-center items-center z-50 hidden">
+    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    <p id="loadingText" class="mt-4 text-gray-700">処理中...</p>
+  </div>
 
   <script>
-    let selectedFile = null;
-    let cropper = null;
+    // 文字数カウント
+    document.getElementById('postText').addEventListener('input', function() {
+      const charCount = this.value.length;
+      document.getElementById('charCount').textContent = `${charCount}/280`;
+    });
 
-    // ファイルサイズをMB単位で表示する関数
-    function formatFileSize(bytes) {
-      return (bytes / (1024 * 1024)).toFixed(2) + 'MB';
-    }
+    // ファイルアップロード処理
+    const fileInput = document.getElementById('fileInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const videoPreview = document.getElementById('videoPreview');
+    const errorMessage = document.getElementById('errorMessage');
 
-    document.getElementById('fileInput').addEventListener('change', async function(e) {
+    fileInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
-      
-      const validImageTypes = ['image/jpeg', 'image/png'];
-      const validVideoTypes = ['video/quicktime', 'video/mp4'];
-      const isImage = validImageTypes.includes(file.type);
-      const isVideo = validVideoTypes.includes(file.type);
-      
-      if (!isImage && !isVideo) {
-        showError('対応していないファイル形式です。');
-        return;
-      }
-      
-      const maxImageSize = 8 * 1024 * 1024; // 8MB
-      const maxVideoSize = 30 * 1024 * 1024; // 30MB
-      
+
       // ファイルサイズチェック
-      if (isImage && file.size > maxImageSize) {
-        showError(`画像ファイルは8MB以内にしてください。\n現在のサイズ: ${formatFileSize(file.size)}`);
-        resetFileInput();
+      const maxSize = file.type.startsWith('video/') ? 30 * 1024 * 1024 : 8 * 1024 * 1024;
+      if (file.size > maxSize) {
+        showError(`ファイルサイズが大きすぎます。${file.type.startsWith('video/') ? '30MB' : '8MB'}以内のファイルを選択してください。`);
         return;
       }
-      
-      if (isVideo && file.size > maxVideoSize) {
-        showError(`動画ファイルは30MB以内にしてください。\n現在のサイズ: ${formatFileSize(file.size)}`);
-        resetFileInput();
-        return;
-      }
-      
-      try {
-        const preview = document.getElementById('preview');
-        const imagePreview = document.getElementById('imagePreview');
-        const videoPreview = document.getElementById('videoPreview');
-        const cropContainer = document.getElementById('cropContainer');
-        
-        if (isImage) {
-          // 画像の場合はクロップ機能を表示
-          cropContainer.style.display = 'block';
-          preview.classList.add('hidden');
-          
-          const cropImage = document.getElementById('cropImage');
-          cropImage.src = URL.createObjectURL(file);
-          
-          // 既存のCropperインスタンスを破棄
-          if (cropper) {
-            cropper.destroy();
-          }
-          
-          // 新しいCropperインスタンスを作成
-          cropper = new Cropper(cropImage, {
-            aspectRatio: NaN, // 初期状態ではアスペクト比を固定しない
-            viewMode: 1,
-            autoCropArea: 1,
-            responsive: true,
-            restore: false,
-            guides: true,
-            center: true,
-            highlight: false,
-            cropBoxMovable: true,
-            cropBoxResizable: true,
-            toggleDragModeOnDblclick: false,
-          });
 
-          // トリミングなしボタンをアクティブに設定
-          document.querySelector('[data-ratio="0"]').classList.add('active');
-        } else {
-          // 動画の場合は通常のプレビュー
-          cropContainer.style.display = 'none';
-          preview.classList.remove('hidden');
-          imagePreview.classList.add('hidden');
-          videoPreview.classList.remove('hidden');
-          videoPreview.src = URL.createObjectURL(file);
-        }
-        
-        selectedFile = file;
-        document.getElementById('uploadButton').disabled = false;
-        hideError();
-      } catch (error) {
-        showError('ファイルのプレビューに失敗しました: ' + error.message);
-        resetFileInput();
+      // プレビュー表示
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          imagePreview.querySelector('img').src = e.target.result;
+          imagePreview.classList.remove('hidden');
+          videoPreview.classList.add('hidden');
+          previewContainer.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type.startsWith('video/')) {
+        const video = videoPreview.querySelector('video');
+        video.src = URL.createObjectURL(file);
+        videoPreview.classList.remove('hidden');
+        imagePreview.classList.add('hidden');
+        previewContainer.classList.remove('hidden');
+      } else {
+        showError('対応していないファイル形式です。');
       }
     });
 
-    // アスペクト比ボタンのイベントリスナー
-    document.querySelectorAll('.aspect-ratio-btn').forEach(button => {
-      button.addEventListener('click', function() {
-        const ratio = parseFloat(this.dataset.ratio);
-        
-        // トリミングなしの場合
-        if (ratio === 0) {
-          if (cropper) {
-            cropper.setAspectRatio(NaN);
-          }
-        } else {
-          // トリミングを適用する場合
-          if (cropper) {
-            cropper.setAspectRatio(ratio);
-          }
-        }
-        
-        // アクティブなボタンのスタイルを更新
-        document.querySelectorAll('.aspect-ratio-btn').forEach(btn => {
-          btn.classList.remove('active');
-        });
-        this.classList.add('active');
-      });
+    // ドラッグ＆ドロップ
+    const dropZone = document.querySelector('.border-dashed');
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, preventDefaults, false);
     });
 
-    // トリミング適用ボタンのイベントリスナー
-    document.getElementById('applyCrop').addEventListener('click', function() {
-      if (cropper) {
-        const canvas = cropper.getCroppedCanvas();
-        // トリミング結果をプレビューに表示
-        const preview = document.getElementById('preview');
-        const imagePreview = document.getElementById('imagePreview');
-        const cropContainer = document.getElementById('cropContainer');
-        
-        preview.classList.remove('hidden');
-        imagePreview.classList.remove('hidden');
-        imagePreview.src = canvas.toDataURL();
-        cropContainer.style.display = 'none';
-        
-        // トリミングした画像をファイルとして保存
-        canvas.toBlob(function(blob) {
-          selectedFile = new File([blob], 'cropped_' + selectedFile.name, {
-            type: 'image/jpeg',
-            lastModified: new Date().getTime()
-          });
-        }, 'image/jpeg');
-      }
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, highlight, false);
     });
 
-    // トリミングキャンセルボタンのイベントリスナー
-    document.getElementById('cancelCrop').addEventListener('click', function() {
-      const preview = document.getElementById('preview');
-      const imagePreview = document.getElementById('imagePreview');
-      const cropContainer = document.getElementById('cropContainer');
-      
-      preview.classList.remove('hidden');
-      imagePreview.classList.remove('hidden');
-      imagePreview.src = URL.createObjectURL(selectedFile);
-      cropContainer.style.display = 'none';
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, unhighlight, false);
     });
 
-    // その他の既存の関数
-    function resetFileInput() {
-      document.getElementById('fileInput').value = '';
-      selectedFile = null;
-      document.getElementById('uploadButton').disabled = true;
-      document.getElementById('preview').classList.add('hidden');
-      document.getElementById('cropContainer').style.display = 'none';
-      if (cropper) {
-        cropper.destroy();
-        cropper = null;
-      }
+    function highlight(e) {
+      dropZone.classList.add('border-blue-500');
+    }
+
+    function unhighlight(e) {
+      dropZone.classList.remove('border-blue-500');
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const file = dt.files[0];
+      fileInput.files = dt.files;
+      const event = new Event('change');
+      fileInput.dispatchEvent(event);
     }
 
     function showError(message) {
-      const error = document.getElementById('error');
-      error.textContent = message;
-      error.classList.remove('hidden');
-      document.getElementById('uploadButton').disabled = true;
+      errorMessage.textContent = message;
+      errorMessage.classList.remove('hidden');
+      setTimeout(() => {
+        errorMessage.classList.add('hidden');
+      }, 5000);
     }
 
-    function hideError() {
-      document.getElementById('error').classList.add('hidden');
-    }
-
-    function showLoading() {
+    function showLoading(message = '処理中...') {
+      document.getElementById('loadingText').textContent = message;
       document.getElementById('loading').classList.remove('hidden');
-      document.getElementById('mainContent').classList.add('hidden');
     }
 
     function hideLoading() {
       document.getElementById('loading').classList.add('hidden');
-      document.getElementById('mainContent').classList.remove('hidden');
     }
 
-    // アップロード処理
-    function uploadFile() {
-      if (!selectedFile) {
-        showError('ファイルが選択されていません。');
+    // フォーム送信
+    document.getElementById('postForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const postText = document.getElementById('postText').value;
+      const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platform"]:checked'))
+        .map(checkbox => checkbox.value);
+
+      if (!postText && !fileInput.files[0]) {
+        showError('投稿内容またはファイルを入力してください');
         return;
       }
-      
-      showLoading();
-      const reader = new FileReader();
-      
-      reader.onload = function(e) {
-        const base64Data = e.target.result.split(',')[1];
-        
-        google.script.run
-          .withSuccessHandler(function(result) {
-            if (result.success) {
-              google.script.host.close();
-            } else {
-              hideLoading();
-              showError('アップロードに失敗しました: ' + (result.error || '不明なエラー'));
-            }
-          })
-          .withFailureHandler(function(error) {
-            hideLoading();
-            showError('アップロードに失敗しました: ' + error.toString());
-          })
-          .uploadFile(base64Data, selectedFile.name, selectedFile.type);
-      };
-      
-      reader.onerror = function(error) {
-        hideLoading();
-        showError('ファイルの読み込みに失敗しました: ' + error.toString());
-      };
-      
-      try {
-        reader.readAsDataURL(selectedFile);
-      } catch (error) {
-        hideLoading();
-        showError('ファイルの処理に失敗しました: ' + error.toString());
+
+      if (selectedPlatforms.length === 0) {
+        showError('投稿先を選択してください');
+        return;
       }
+
+      showLoading('投稿中...');
+
+      // ここに投稿処理を実装
+      google.script.run
+        .withSuccessHandler(function(result) {
+          hideLoading();
+          if (result.success) {
+            // 投稿成功時の処理
+            document.getElementById('postText').value = '';
+            fileInput.value = '';
+            previewContainer.classList.add('hidden');
+            loadPostHistory();
+          } else {
+            showError(result.error || '投稿に失敗しました');
+          }
+        })
+        .withFailureHandler(function(error) {
+          hideLoading();
+          showError('投稿に失敗しました: ' + error.toString());
+        })
+        .submitPost({
+          text: postText,
+          platforms: selectedPlatforms,
+          file: fileInput.files[0]
+        });
+    });
+
+    // 投稿履歴の読み込み
+    function loadPostHistory() {
+      showLoading('投稿履歴を読み込み中...');
+      google.script.run
+        .withSuccessHandler(function(posts) {
+          hideLoading();
+          const postHistory = document.getElementById('postHistory');
+          postHistory.innerHTML = posts.map(post => `
+            <div class="border-b border-gray-200 pb-4">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <p class="text-gray-900">${post.text}</p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    ${post.platforms.map(platform => `
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        ${platform}
+                      </span>
+                    `).join('')}
+                  </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                  ${new Date(post.timestamp).toLocaleString()}
+                </div>
+              </div>
+            </div>
+          `).join('');
+        })
+        .withFailureHandler(function(error) {
+          hideLoading();
+          showError('投稿履歴の読み込みに失敗しました: ' + error.toString());
+        })
+        .getPostHistory();
     }
 
+    // 初期化
+    document.addEventListener('DOMContentLoaded', function() {
+      loadPostHistory();
+    });
   </script>
 </body>
 </html>

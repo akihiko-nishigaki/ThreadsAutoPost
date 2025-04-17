@@ -1,0 +1,45 @@
+<div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+  <form id="postForm" class="space-y-4">
+    <div>
+      <label for="postText" class="block text-sm font-medium text-gray-700 mb-2">投稿内容</label>
+      <textarea
+        id="postText"
+        name="postText"
+        rows="4"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        placeholder="投稿内容を入力してください（最大280文字）"
+        maxlength="280"
+      ></textarea>
+      <div class="flex justify-between items-center mt-1">
+        <span id="charCount" class="text-sm text-gray-500">0/280</span>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">投稿先</label>
+      <div class="flex flex-wrap gap-4">
+        <label class="inline-flex items-center">
+          <input type="checkbox" name="platform" value="x" class="form-checkbox h-5 w-5 text-blue-600">
+          <span class="ml-2 text-gray-700">X</span>
+        </label>
+        <label class="inline-flex items-center">
+          <input type="checkbox" name="platform" value="threads" class="form-checkbox h-5 w-5 text-blue-600">
+          <span class="ml-2 text-gray-700">Threads</span>
+        </label>
+        <label class="inline-flex items-center">
+          <input type="checkbox" name="platform" value="instagram" class="form-checkbox h-5 w-5 text-blue-600">
+          <span class="ml-2 text-gray-700">Instagram</span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <button
+        type="submit"
+        class="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+      >
+        投稿する
+      </button>
+    </div>
+  </form>
+</div> 
