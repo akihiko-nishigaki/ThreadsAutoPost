@@ -1,4 +1,3 @@
-
 // const THREADS_CLIENT_ID = '1587515402190570';
 // const THREADS_CLIENT_SECRET = '0b28b0575aec454f64288e80213646d9';
 const THREADS_SCOPE = 'threads_basic,threads_content_publish';
@@ -221,7 +220,7 @@ function clearStoredTokens() {
     Logger.log('すべての保存されたトークンをクリアしました。');
 }
 
-function getAuthorizationUrl() {
+function getThreadsAuthorizationUrl() {
     var service = getServiceThreads();
     if (!service.hasAccess()) {
         var authorizationUrl = service.getAuthorizationUrl();

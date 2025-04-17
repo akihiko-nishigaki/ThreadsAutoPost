@@ -18,7 +18,8 @@ function onOpen() {
 
   // X（Twitter）メニュー
   const xMenu = ui.createMenu('X設定')
-    .addItem('アカウント認証', 'authorizeLinkForNewTwitterBotWithImage');
+    .addItem('アカウント認証', 'authorizeLinkForNewTwitterBotWithImage')
+    .addItem('ユーザーID取得', 'setXUserId');
 
   // Instagramメニュー
   const instaMenu = ui.createMenu('Instagram設定')
@@ -400,5 +401,5 @@ function showThreadsAuthDialog() {
  * @returns {string|null} 認証URL
  */
 function getAuthUrl() {
-  return getAuthorizationUrl();
+  return getThreadsAuthorizationUrl();
 }

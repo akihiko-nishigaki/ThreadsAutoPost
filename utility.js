@@ -102,7 +102,7 @@ function getSystemProperty(){
   let threadsClientSecret = sheet.getRange(PROPERTY_CELL.THREADS_CLIENT_SECRET).getValue();
   let selectedSheetName = sheet.getRange(PROPERTY_CELL.SELECTED_SHEET_NAME).getValue();
 
-  
+
   return{
     uploadImageFoloderId: uploadImageFoloderId,
     uploadVideoFoloderId: uploadVideoFoloderId,
@@ -323,8 +323,10 @@ function getVideoInfo(url) {
     var videoInfo = {
       fileName: getFileNameFromUrl(url),
       blob: blob,
+      url: url,
       contentType: blob.getContentType(),
-      sizeBytes: blob.getBytes().length,
+      fileBytes: blob.getBytes(),
+      totalBytes: blob.getBytes().length,
       sizeMB: Math.round((blob.getBytes().length / (1024 * 1024)) * 100) / 100,
       responseCode: responseCode
     };

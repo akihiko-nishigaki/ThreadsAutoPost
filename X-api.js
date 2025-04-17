@@ -14,6 +14,7 @@ function authorizeLinkForNewTwitterBotWithImage() {
   // システムプロパティを取得
   const prop = getSystemProperty();
 
+  
 
   if (!service) {
     return;
@@ -151,7 +152,7 @@ function authCallback(request) {
 /**
  * 認証情報からユーザーIDをセットする
  */
-function setUserId(){
+function setXUserId(){
   let userId = getUserIdFromApiKey();
 
   // システムプロパティを記録する
@@ -180,15 +181,50 @@ function getXService() {
     try {
       tokenData = JSON.parse(tokenData);
       if (tokenData.access_token) {
-        var service = {
-          hasAccess: function() { return true; },
-          getAccessToken: function() { return tokenData.access_token; },
-          reset: function() { 
-            setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, "");
-            setSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER, "");
+        // トークンの有効期限をチェック
+        const now = new Date().getTime();
+        const tokenTimestamp = tokenData.timestamp || 0;
+        const tokenExpiresIn = tokenData.expires_in || 7200; // デフォルト2時間
+        const tokenAge = (now - tokenTimestamp) / 1000; // 秒単位
+
+        if (tokenAge < tokenExpiresIn) {
+          Logger.log('有効なアクセストークンを使用します');
+          var service = {
+            hasAccess: function() { return true; },
+            getAccessToken: function() { return tokenData.access_token; },
+            reset: function() { 
+              setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, "");
+              setSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER, "");
+            }
+          };
+          return service;
+        } else if (tokenData.refresh_token) {
+          Logger.log('リフレッシュトークンを使用して新しいアクセストークンを取得します');
+          try {
+            // リフレッシュトークンを使用して新しいアクセストークンを取得
+            const newTokenData = refreshAccessToken(tokenData.refresh_token, prop.xApiClient, prop.xApiClientSecret);
+            if (newTokenData) {
+              // 新しいトークンデータを保存
+              setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, JSON.stringify(newTokenData));
+              Logger.log('新しいアクセストークンを取得しました');
+              var service = {
+                hasAccess: function() { return true; },
+                getAccessToken: function() { return newTokenData.access_token; },
+                reset: function() { 
+                  setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, "");
+                  setSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER, "");
+                }
+              };
+              return service;
+            }
+          } catch (e) {
+            Logger.log('リフレッシュトークンによる更新に失敗しました: ' + e.toString());
           }
-        };
-        return service;
+        }
+        Logger.log('アクセストークンの有効期限が切れています');
+        // トークンをリセット
+        setSystemPropertyValue(PROPERTY_CELL.X_OAUTH2_TWITTER, "");
+        setSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER, "");
       }
     } catch (e) {
       Logger.log('トークンデータの解析エラー: ' + e);
@@ -196,26 +232,65 @@ function getXService() {
   }
   
   // 通常のサービス作成（認証前または再認証が必要な場合）
-  return OAuth2.createService('twitter.' + spreadsheetId)  // サービス名にもスプレッドシートIDを含める
+  const basicAuthorization = "Basic " + Utilities.base64Encode(this.clientId + ":" + this.clientSecret);
+
+  return OAuth2.createService('twitter.' + spreadsheetId)
     .setAuthorizationBaseUrl('https://twitter.com/i/oauth2/authorize')
+    .setRedirectUri(getRedirectUri())
     .setTokenUrl('https://api.twitter.com/2/oauth2/token')
     .setClientId(prop.xApiClient)
     .setClientSecret(prop.xApiClientSecret)
     .setCallbackFunction('authCallback')
-    .setPropertyStore(PropertiesService.getScriptProperties())  // UserPropertiesからScriptPropertiesに変更
-    .setScope('tweet.read tweet.write users.read offline.access')
+    .setPropertyStore(PropertiesService.getScriptProperties())
+    .setScope('tweet.read tweet.write users.read offline.access media.write')
     .setParam('response_type', 'code')
+    .setParam("authorization", basicAuthorization)
     .setParam('code_challenge_method', 'S256')
-    .setRedirectUri(getRedirectUri())
+    .generateCodeVerifier()
     .setTokenHeaders({
-      'Authorization': 'Basic ' + Utilities.base64Encode(
-        prop.xApiClient + ':' + 
-        prop.xApiClientSecret
-      ),
+      'Authorization': basicAuthorization,
       'Content-Type': 'application/x-www-form-urlencoded'
     });
 }
 
+/**
+ * リフレッシュトークンを使用して新しいアクセストークンを取得
+ */
+function refreshAccessToken(refreshToken, clientId, clientSecret) {
+  const endpoint = 'https://api.twitter.com/2/oauth2/token';
+  const payload = {
+    'grant_type': 'refresh_token',
+    'refresh_token': refreshToken
+  };
+  
+  const options = {
+    method: 'POST',
+    payload: payload,
+    headers: {
+      'Authorization': 'Basic ' + Utilities.base64Encode(clientId + ':' + clientSecret),
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    muteHttpExceptions: true
+  };
+  
+  const response = UrlFetchApp.fetch(endpoint, options);
+  const responseCode = response.getResponseCode();
+  const responseText = response.getContentText();
+  
+  Logger.log('リフレッシュトークン応答: ' + responseText);
+  
+  if (responseCode !== 200) {
+    throw new Error('リフレッシュトークンによる更新に失敗しました: ' + responseText);
+  }
+  
+  const tokenData = JSON.parse(responseText);
+  return {
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token || refreshToken, // 新しいリフレッシュトークンが返されない場合は古いものを保持
+    expires_in: tokenData.expires_in,
+    timestamp: new Date().getTime()
+  };
+}
 
 // PKCE用のcode_verifierを生成
 function generateCodeVerifier() {
@@ -283,35 +358,32 @@ function resetAuth() {
 
 // 複数の画像をアップロードする関数
 function uploadImagesForX(attachmentInfo, index) {
-  
-  const uploadMediaEndpoint = 'https://upload.twitter.com/1.1/media/upload.json';
+  // v2のメディアアップロードエンドポイントを使用
+  const uploadMediaEndpoint = 'https://api.twitter.com/2/media/upload';
   
   // 認証情報を取得する
   const service = getXService();
+  if (!service) {
+    throw new Error("サービスの取得に失敗しました。");
+  }
+
+  // アクセストークンの確認
+  const accessToken = service.getAccessToken();
+  Logger.log('アクセストークン: ' + accessToken);
 
   Logger.log('X画像アップロード中:' + index + '件目...');
-
   Logger.log('=== 画像アップロード開始 ===');
   Logger.log(`インデックス: ${index}`);
   Logger.log(`URL: ${attachmentInfo.url}`);
   Logger.log(`FileID: ${attachmentInfo.fileId}`);
 
   try {
-    // const imageBlob = UrlFetchApp.fetch(attachmentInfo.url).getBlob();
-
     let imageBlob;
     
-    if (attachmentInfo.fileId) {
-      const file = DriveApp.getFileById(attachmentInfo.fileId);
-      imageBlob = file.getBlob();
-      Logger.log(`Drive File Name: ${file.getName()}`);
-      Logger.log(`Drive File MimeType: ${file.getMimeType()}`);
-    } else {
-      const response = UrlFetchApp.fetch(attachmentInfo.url);
-      Logger.log('Response Headers:');
-      Logger.log(JSON.stringify(response.getAllHeaders()));
-      imageBlob = response.getBlob();
-    }
+    const file = DriveApp.getFileById(attachmentInfo.fileId);
+    imageBlob = file.getBlob();
+    Logger.log(`Drive File Name: ${file.getName()}`);
+    Logger.log(`Drive File MimeType: ${file.getMimeType()}`);
 
     // 画像の詳細情報を出力
     Logger.log(`Blob ContentType: ${imageBlob.getContentType()}`);
@@ -322,108 +394,43 @@ function uploadImagesForX(attachmentInfo, index) {
     const validMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     const currentMimeType = imageBlob.getContentType();
 
-
     if (!validMimeTypes.includes(currentMimeType)) {
       Logger.log(`警告: 不適切なMIMEタイプ: ${currentMimeType}`);
-      // MIMEタイプを強制的に設定
       imageBlob.setContentType('image/jpeg');
       Logger.log(`MIMEタイプを image/jpeg に変更しました`);
     }
 
-    const imageBytes = imageBlob.getBytes();
-    Logger.log(`Image Bytes Length: ${imageBytes.length}`);
-
-    // JPEGシグネチャーのチェック
-    const isJpeg = imageBytes[0] === 0xFF && imageBytes[1] === 0xD8;
-    Logger.log(`JPEG Signature Check: ${isJpeg}`);
-
-    // Base64エンコード前にバイナリデータを確認
-    const base64Data = Utilities.base64Encode(imageBytes);
-    Logger.log(`Base64 Length: ${base64Data.length}`);
-
-    const payload = {
-      media_data: base64Data,
-      media_category: 'tweet_image'  // カテゴリを明示的に指定
-    };
-
-    
-    const uploadResponse = service.fetch(uploadMediaEndpoint, {
-      method: "POST",
-      // payload: { 
-      //   media_data: base64Data 
-      // },
-      payload: payload,
-      contentType: "application/x-www-form-urlencoded",
+    // Blob オブジェクトをそのまま payload にセット
+    var options = {
+      method: "post",
+      payload: { media: imageBlob },
+      headers: { "Authorization": "Bearer " + accessToken },
       muteHttpExceptions: true
-    });
-
-    // X APIの制限に対応するため、アップロード間に少し待機
-    Utilities.sleep(2000);
-
-    // レスポンスの詳細なログ出力
-    Logger.log('Response Code: ' + uploadResponse.getResponseCode());
-    Logger.log('Response Content: ' + uploadResponse.getContentText());
-
-    if (uploadResponse.getResponseCode() !== 200) {
-      Logger.log(`X画像アップロード失敗: ${attachmentInfo.url}. Response: ${uploadResponse.getContentText()}`);
-      throw new Error(`X画像アップロード失敗: ${attachmentInfo.url}. Response: ${uploadResponse.getContentText()}`);
+    };
+    
+    var response = UrlFetchApp.fetch(uploadMediaEndpoint, options);
+    Logger.log("シンプルアップロード応答: " + response.getContentText());
+    
+    var result = JSON.parse(response.getContentText());
+    Logger.log("レスポンス解析結果: " + JSON.stringify(result));
+    
+    if (result.errors) {
+      throw new Error("Twitterシンプルアップロードエラー: " + JSON.stringify(result.errors));
     }
-
-    Logger.log('X画像アップロード成功');
-
-    // 直接media_id_stringを返す
-    const mediaData = JSON.parse(uploadResponse);
-    return mediaData.media_id_string;
+    
+    var mediaId = result.id;
+    if (!mediaId) {
+      throw new Error("アップロード成功しましたが、メディアIDが取得できませんでした: " + response.getContentText());
+    }
+    
+    Logger.log("取得メディアID: " + mediaId);
+    return mediaId;
 
   } catch (error) {
     Logger.log(`X画像アップロード失敗: ${attachmentInfo.url}: ${error.toString()}`);
     throw error;
   }
-  
-}
 
-/**
- * 画像のアップロード
- * @returns {Array} media_idの配列
- */
-function uploadImages() {
-  const service = getXService();
-  if (service === null) {
-    return null;
-  }
-
-  const uploadedMediaIds = [];
-  const uploadUrl = "https://upload.twitter.com/1.1/media/upload.json";
-
-  for (let i = 0; i < this.tweetInfo.imageURLs.length; i++) {
-    const imageUrl = this.tweetInfo.imageURLs[i];
-    if (imageUrl === "") {
-      continue;
-    }
-
-    const fileId = imageUrl.split("/d/")[1].split("/")[0];
-    const file = DriveApp.getFileById(fileId);
-    const blob = file.getBlob();
-    const base64Data = Utilities.base64Encode(blob.getBytes());
-
-    const response = service.fetch(uploadUrl, {
-      method: "POST",
-      payload: { media_data: base64Data },
-      muteHttpExceptions: true
-    });
-
-    console.log("uploadURLResponseCode:", response.getResponseCode());
-    console.log("uploadURLResponse:", response.getContentText());
-
-    if (response.getResponseCode() !== 200) {
-      throw new Error(`画像のアップロードに失敗しました。画像URL：${imageUrl}：詳細:${response.getResponseCode()}:${response.getContentText()}`);
-    }
-
-    const json = JSON.parse(response);
-    const mediaId = json.media_id_string;
-    uploadedMediaIds.push(mediaId);
-  }
-  return uploadedMediaIds;
 }
 
 /**
@@ -447,19 +454,19 @@ function uploadVideoForX(attachVideoInfo, index) {
     let videoInfo;
     let mimeType;
 
-    if(attachVideoInfo.fileId != ""){
-      // Google Driveから動画ファイルを取得
-      videoFile = DriveApp.getFileById(attachVideoInfo.fileId);
-      videoBlob = videoFile.getBlob();
-      totalBytes = videoBlob.getBytes().length;
-      mimeType = videoFile.getMimeType();
+    // if(attachVideoInfo.fileId != ""){
+    //   // Google Driveから動画ファイルを取得
+    //   videoFile = DriveApp.getFileById(attachVideoInfo.fileId);
+    //   videoBlob = videoFile.getBlob();
+    //   totalBytes = videoBlob.getBytes().length;
+    //   mimeType = videoFile.getMimeType();
 
-    }else{
-      videoInfo = getVideoInfo(attachVideoInfo.url);
-      videoBlob = videoInfo.blob;
-      totalBytes = videoInfo.sizeBytes;
-      mimeType = videoInfo.contentType;
-    }
+    // }else{
+    videoInfo = getVideoInfo(attachVideoInfo.url);
+    videoBlob = videoInfo.blob;
+    totalBytes = videoInfo.totalBytes;
+    mimeType = videoInfo.contentType;
+    // }
 
     // ファイルサイズチェック
     if (totalBytes > MAX_VIDEO_SIZE) {
@@ -474,7 +481,7 @@ function uploadVideoForX(attachVideoInfo, index) {
     Logger.log(`動画アップロード開始 - ファイルサイズ: ${Math.round(totalBytes / 1024 / 1024)}MB`);
 
     // STEP 1: 初期化
-    const mediaId = initializeVideoUpload(service, totalBytes);
+    const mediaId = initializeVideoUpload(service, totalBytes, mimeType, "tweet_video");
     
     // STEP 2: チャンク分割アップロード
     appendVideoChunks(service, mediaId, videoBlob);
@@ -496,45 +503,49 @@ function uploadVideoForX(attachVideoInfo, index) {
 /**
  * 動画アップロードの初期化
  */
-function initializeVideoUpload(service, totalBytes) {
-  const endpoint = 'https://upload.twitter.com/1.1/media/upload.json';
+function initializeVideoUpload(service, totalBytes, mimeType, mediaCategory) {
+  const endpoint = 'https://api.twitter.com/2/media/upload';
   const payload = {
     command: 'INIT',
-    total_bytes: totalBytes,
-    media_type: 'video/mp4',
-    media_category: 'tweet_video'
+    total_bytes: JSON.stringify(totalBytes),
+    media_type: mimeType,
+    media_category: mediaCategory
   };
   
-  const response = service.fetch(endpoint, {
+  const options = {
     method: 'POST',
     payload: payload,
-    muteHttpExceptions: true
-  });
+    muteHttpExceptions: true,
+    headers: {
+      'Authorization': 'Bearer ' + service.getAccessToken(),
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  };
   
+  const response = UrlFetchApp.fetch(endpoint, options);
   const responseCode = response.getResponseCode();
   const responseText = response.getContentText();
-  const responseData = JSON.parse(responseText);
   
   Logger.log('初期化レスポンス:', responseText);
   
-  // 202も正常なレスポンスとして扱う
-  if (responseCode !== 200 && responseCode !== 202) {
+  if (responseCode !== 200 && responseCode !== 201 && responseCode !== 202) {
     throw new Error('動画アップロードの初期化に失敗しました: ' + responseText);
   }
   
-  if (!responseData.media_id_string) {
-    throw new Error('media_id_stringが取得できませんでした: ' + responseText);
+  const responseData = JSON.parse(responseText);
+  if (!responseData.data || !responseData.data.id) {
+    throw new Error('media_idが取得できませんでした: ' + responseText);
   }
   
-  Logger.log('動画アップロードの初期化成功 - media_id: ' + responseData.media_id_string);
-  return responseData.media_id_string;
+  Logger.log('動画アップロードの初期化成功 - media_id: ' + responseData.data.id);
+  return responseData.data.id;
 }
 
 /**
- * 動画データのチャンク分割アップロード（安定化版）
+ * 動画データのチャンク分割アップロード
  */
 function appendVideoChunks(service, mediaId, videoBlob) {
-  const chunkSize = 5 * 1024 * 1024; // 5MB chunks
+  const chunkSize = 1024 * 1024; // 1MB chunks
   const totalBytes = videoBlob.getBytes().length;
   const chunks = Math.ceil(totalBytes / chunkSize);
   
@@ -543,7 +554,6 @@ function appendVideoChunks(service, mediaId, videoBlob) {
   Logger.log(`チャンクサイズ: ${chunkSize} bytes (${Math.round(chunkSize / 1024 / 1024)}MB)`);
   Logger.log(`総チャンク数: ${chunks}`);
 
-  // メモリ使用量を最適化するため、チャンク処理を分割
   const bytes = videoBlob.getBytes();
   for (let i = 0; i < chunks; i++) {
     const start = i * chunkSize;
@@ -553,36 +563,39 @@ function appendVideoChunks(service, mediaId, videoBlob) {
     Logger.log(`チャンクサイズ: ${end - start} bytes`);
 
     try {
-      // チャンクを個別に処理
       const chunk = bytes.slice(start, end);
-      const base64Data = Utilities.base64Encode(chunk);
 
-      const payload = {
-        command: 'APPEND',
-        media_id: mediaId,
-        segment_index: i,
-        media_data: base64Data
+      const options = {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + service.getAccessToken(),
+        },
+        payload: {
+          command: 'APPEND',
+          media_id: mediaId,
+          segment_index: JSON.stringify(i),
+          media: Utilities.newBlob(chunk, "application/octet-stream", "chunk" + i),
+        },
+        muteHttpExceptions: true
       };
 
-      Logger.log(`リクエスト準備完了 (media_id: ${mediaId}, segment_index: ${i})`);
+      // optionsをログ出力
+      Logger.log('=== APPEND Payload ===');
+      Logger.log('command: ' + options.payload.command);
+      Logger.log('media_id: ' + options.payload.media_id);
+      Logger.log('segment_index: ' + options.payload.segment_index);
+      Logger.log('media: ' + options.payload.media);
+      Logger.log('===================');
 
-      const response = service.fetch('https://upload.twitter.com/1.1/media/upload.json', {
-        method: 'POST',
-        payload: payload,
-        muteHttpExceptions: true
-      });
-
+      const response = UrlFetchApp.fetch('https://api.twitter.com/2/media/upload', options);
       const responseCode = response.getResponseCode();
       
-      // 204（No Content）も成功として扱う
-      if (responseCode !== 200 && responseCode !== 202 && responseCode !== 204) {
+      if (responseCode !== 200 && responseCode !== 201 && responseCode !== 202 && responseCode !== 204) {
         const responseText = response.getContentText();
-        const headers = response.getAllHeaders();
         throw new Error(
           `チャンクアップロード失敗:\n` +
           `ステータスコード: ${responseCode}\n` +
-          `レスポンス: ${responseText}\n` +
-          `ヘッダー: ${JSON.stringify(headers)}`
+          `レスポンス: ${responseText}`
         );
       }
 
@@ -590,10 +603,7 @@ function appendVideoChunks(service, mediaId, videoBlob) {
 
       // メモリを解放
       delete chunk;
-      delete base64Data;
 
-      // スクリプトの実行時間制限に対応するため、
-      // 定期的にチェックポイントを設ける
       if (i > 0 && i % 5 === 0) {
         Logger.log('チェックポイント - 短い休止を入れます');
         Utilities.sleep(2000);
@@ -605,61 +615,34 @@ function appendVideoChunks(service, mediaId, videoBlob) {
       throw new Error(`チャンク ${i + 1}/${chunks} のアップロードに失敗しました: ${error.toString()}`);
     }
 
-    // API制限を考慮して待機
-    Logger.log('API制限対応のため待機');
     Utilities.sleep(1000);
   }
 
-  // メモリを解放
   delete bytes;
-
   Logger.log('\n========== 全チャンクのアップロード完了 ==========');
-}
-
-/**
- * レスポンスの詳細なログを出力する補助関数
- */
-function logDetailedResponse(response, context = '') {
-  Logger.log(`\n===== レスポンス詳細 ${context} =====`);
-  Logger.log(`ステータスコード: ${response.getResponseCode()}`);
-  
-  try {
-    const contentText = response.getContentText();
-    Logger.log('レスポンス本文:');
-    Logger.log(contentText);
-    
-    try {
-      const jsonResponse = JSON.parse(contentText);
-      Logger.log('JSONパース結果:');
-      Logger.log(JSON.stringify(jsonResponse, null, 2));
-    } catch (e) {
-      Logger.log('レスポンスのJSONパースに失敗:');
-      Logger.log(e.toString());
-    }
-  } catch (e) {
-    Logger.log('レスポンス本文の取得に失敗:');
-    Logger.log(e.toString());
-  }
-
-  Logger.log('レスポンスヘッダー:');
-  Logger.log(JSON.stringify(response.getAllHeaders(), null, 2));
-  Logger.log('=====================================\n');
 }
 
 /**
  * 動画アップロードの完了通知
  */
 function finalizeVideoUpload(service, mediaId) {
-  const response = service.fetch('https://upload.twitter.com/1.1/media/upload.json', {
+  const options = {
     method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + service.getAccessToken(),
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
     payload: {
       command: 'FINALIZE',
       media_id: mediaId
     },
     muteHttpExceptions: true
-  });
+  };
   
-  if (response.getResponseCode() !== 200) {
+  const response = UrlFetchApp.fetch('https://api.twitter.com/2/media/upload', options);
+  const responseCode = response.getResponseCode();
+  
+  if (responseCode !== 200 && responseCode !== 201 && responseCode !== 202) {
     throw new Error('動画アップロードの完了処理に失敗しました: ' + response.getContentText());
   }
   
@@ -670,14 +653,22 @@ function finalizeVideoUpload(service, mediaId) {
  * 動画処理の完了待機
  */
 function waitForVideoProcessing(service, mediaId) {
-  const maxAttempts = 30; // 最大待機回数
+  const maxAttempts = 30;
   let attempts = 0;
   
   while (attempts < maxAttempts) {
-    const response = service.fetch('https://upload.twitter.com/1.1/media/upload.json?command=STATUS&media_id=' + mediaId, {
+    const options = {
       method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + service.getAccessToken()
+      },
       muteHttpExceptions: true
-    });
+    };
+    
+    const response = UrlFetchApp.fetch(
+      'https://api.twitter.com/2/media/upload?command=STATUS&media_id=' + mediaId,
+      options
+    );
     
     if (response.getResponseCode() !== 200) {
       throw new Error('ステータス確認に失敗しました: ' + response.getContentText());
@@ -685,17 +676,17 @@ function waitForVideoProcessing(service, mediaId) {
     
     const status = JSON.parse(response.getContentText());
     
-    if (status.processing_info) {
-      if (status.processing_info.state === 'succeeded') {
+    if (status.data && status.data.processing_info) {
+      if (status.data.processing_info.state === 'succeeded') {
         return true;
-      } else if (status.processing_info.state === 'failed') {
-        throw new Error('動画の処理に失敗しました: ' + JSON.stringify(status.processing_info.error));
+      } else if (status.data.processing_info.state === 'failed') {
+        throw new Error('動画の処理に失敗しました: ' + JSON.stringify(status.data.processing_info.error));
       }
     }
     
     Logger.log(`動画処理待機中... 試行回数: ${attempts + 1}/${maxAttempts}`);
     attempts++;
-    Utilities.sleep(2000); // 2秒待機
+    Utilities.sleep(2000);
   }
   
   throw new Error('動画の処理がタイムアウトしました');
@@ -754,23 +745,27 @@ function postTweetWithMultipleImages(tweetText, attachmentInfos, resId, quoteId)
       };
     }
 
-    // // メディアIDをカンマ区切りでつなぐ
-    // let mediaIdString = mediaIds.join(",");
     // // 添付ファイルがあれば添付する
     // if (mediaIds.length > 0) {
-    //   payloadObj.media = { media_ids: mediaIdString };
+    //   payloadObj.media = { 
+    //     media_keys: mediaIds  // media_idsからmedia_keysに変更
+    //   };
     // }
-
-    // 添付ファイルがあれば添付する
+    // 添付ファイルがあればmediaプロパティとして追記
     if (mediaIds.length > 0) {
-      payloadObj.media = { media_ids: mediaIds }; // 直接配列を使用
+      payloadObj.media = {
+        media_ids: mediaIds
+      };
     }
 
     const options = {
       method: "post",
       payload: JSON.stringify(payloadObj),
       contentType: "application/json",
-      muteHttpExceptions: true
+      muteHttpExceptions: true,
+      headers: {
+        'Authorization': 'Bearer ' + service.getAccessToken()
+      }
     };
 
     // 投稿を実施
@@ -815,7 +810,10 @@ function postTweetWithVideo(tweetText, videoFile) {
       method: "post",
       payload: JSON.stringify(payloadObj),
       contentType: "application/json",
-      muteHttpExceptions: true
+      muteHttpExceptions: true,
+      headers: {
+        'Authorization': 'Bearer ' + service.getAccessToken()
+      }
     };
 
     // 投稿を実施
@@ -841,9 +839,14 @@ function getUserIdFromApiKey() {
   const url = "https://api.twitter.com/2/users/me"; // 認証されたユーザー情報を取得
   const options = {
     method: "get",
+    contentType: "application/json",
+    muteHttpExceptions: true,
+    headers: {
+      'Authorization': 'Bearer ' + service.getAccessToken()
+    }
   };
 
-  const response = service.fetch(url, options);
+  const response = UrlFetchApp.fetch(url, options);
   const json = JSON.parse(response.getContentText());
   
   if (!json.data) {
@@ -865,7 +868,7 @@ function makeTweetRequestForNewTwitterBotWithImage(url, options) {
     throw new Error("ツイートに失敗しました。");
   }
 
-  const response = service.fetch(url, options);
+  const response = UrlFetchApp.fetch(url, options);
   const responseCode = response.getResponseCode();
   const json = JSON.parse(response.getContentText());
   const jsonString = JSON.stringify(json);
@@ -915,6 +918,8 @@ function getScriptIDForNewTwitterBotWithImage() {
   
 }
 
+
+
 /**
  * XユーザーID取得
  */
@@ -961,25 +966,6 @@ function extractTweetId(url) {
     return null;
   }
 }
-
-// function getSystemProperty() {
-//   // スプレッドシートを取得する
-//   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-//   // システムシートを取得する
-//   const systemSheet = ss.getSheetByName(SHEETS_NAME.SYSTEM);
-  
-//   // プロパティを取得する
-//   const prop = {
-//     xApiClient: systemSheet.getRange(PROPERTY_CELL.X_CLIENT_KEY).getValue(),
-//     xApiClientSecret: systemSheet.getRange(PROPERTY_CELL.X_CLIENT_SECRET).getValue(),
-//     xOauth2Twitter: systemSheet.getRange(PROPERTY_CELL.X_OAUTH2_TWITTER).getValue(),
-//     xCodeVerifier: systemSheet.getRange(PROPERTY_CELL.X_CODE_VERIFIER).getValue(),
-//     xUserId: systemSheet.getRange(PROPERTY_CELL.X_USER_ID).getValue()
-//   };
-  
-//   return prop;
-// }
 
 // 特定のプロパティを取得する関数
 function getSystemPropertyValue(key) {

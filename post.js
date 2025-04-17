@@ -180,9 +180,10 @@ function postThreads(rowData, rowIndex, attachmentFiles, tableData, sheetName){
       let mediaIds = [];
 
       attachmentFiles.forEach((attachment, index) => {
-        // ファイルを添付し、メディアIDを取得する
-        mediaIds.push(uploadSingleImageVideo(attachment.url, attachment.movieDirectUrl, attachment.fileCategory, quoteId));
-
+        if(attachment.url != ""){
+          // ファイルを添付し、メディアIDを取得する
+          mediaIds.push(uploadSingleImageVideo(attachment.url, attachment.movieDirectUrl, attachment.fileCategory, quoteId));
+        }
       });
 
       // カルーセルアルバムを作成する
