@@ -403,3 +403,32 @@ function showThreadsAuthDialog() {
 function getAuthUrl() {
   return getThreadsAuthorizationUrl();
 }
+
+/**
+ * スクリプトのURLを取得
+ * @return {string} スクリプトのURL
+ */
+function getScriptUrl() {
+  return ScriptApp.getService().getUrl();
+}
+
+/**
+ * ウェブアプリケーションのエントリーポイント
+ * @return {HtmlOutput} HTML出力
+ */
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('SNS投稿アプリケーション')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setFaviconUrl('https://www.google.com/favicon.ico');
+}
+
+/**
+ * HTMLファイルをインクルードするためのヘルパー関数
+ * @param {string} filename - インクルードするファイル名
+ * @return {string} ファイルの内容
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
