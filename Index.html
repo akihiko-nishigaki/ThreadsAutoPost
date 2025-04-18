@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SNS投稿アプリケーション</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>SNS投稿アプリ</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -198,160 +198,128 @@
 
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100">
   <div class="container mx-auto px-4 py-8">
     <!-- ヘッダー -->
-    <header class="bg-white shadow-sm mb-8">
-      <div class="container mx-auto px-4 py-4">
-        <h1 class="text-2xl font-bold text-gray-800 text-center">SNS投稿アプリケーション</h1>
-      </div>
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">SNS投稿アプリ</h1>
     </header>
 
-    <!-- メインコンテンツ -->
-    <main>
-      <!-- 投稿フォーム -->
-      <div class="bg-white rounded-lg shadow-sm p-6">
-        <form id="postForm" class="space-y-4">
-          <div>
-            <label for="postText" class="block text-sm font-medium text-gray-700 mb-2">投稿内容</label>
-            <textarea
-              id="postText"
-              name="postText"
-              rows="4"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="投稿内容を入力してください（最大280文字）"
-              maxlength="280"
-            ></textarea>
-            <div class="flex justify-between items-center mt-1">
-              <span id="charCount" class="text-sm text-gray-500">0/280</span>
-            </div>
+    <!-- 投稿フォーム -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+      <form id="postForm" class="space-y-6">
+        <!-- テキストエリア -->
+        <div>
+          <label for="postText" class="block text-sm font-medium text-gray-700 mb-2">投稿内容</label>
+          <textarea
+            id="postText"
+            name="postText"
+            rows="4"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="投稿内容を入力してください"
+            maxlength="280"
+          ></textarea>
+          <div class="flex justify-end mt-1">
+            <span id="charCount" class="text-sm text-gray-500">0/280</span>
           </div>
+        </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">投稿先</label>
-            <div class="flex flex-wrap gap-4">
-              <label class="inline-flex items-center">
-                <input type="checkbox" name="platform" value="x" class="form-checkbox h-5 w-5 text-blue-600">
-                <span class="ml-2 text-gray-700">X</span>
-              </label>
-              <label class="inline-flex items-center">
-                <input type="checkbox" name="platform" value="threads" class="form-checkbox h-5 w-5 text-blue-600">
-                <span class="ml-2 text-gray-700">Threads</span>
-              </label>
-              <label class="inline-flex items-center">
-                <input type="checkbox" name="platform" value="instagram" class="form-checkbox h-5 w-5 text-blue-600">
-                <span class="ml-2 text-gray-700">Instagram</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- ファイルアップロード -->
-          <div class="space-y-4">
-            <label class="block text-sm font-medium text-gray-700">メディアファイル</label>
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
-              <div class="space-y-2">
-                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <div class="text-sm text-gray-600">
-                  <label for="fileInput" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                    <span>ファイルを選択</span>
-                    <input id="fileInput" name="fileInput" type="file" class="sr-only" accept=".jpg,.jpeg,.png,.mov,.mp4">
-                  </label>
-                  <p class="pl-1">またはドラッグ＆ドロップ</p>
-                </div>
-                <p class="text-xs text-gray-500">
-                  対応形式: JPG, PNG, MOV, MP4<br>
-                  サイズ制限: 画像 8MB以内, 動画 30MB以内
-                </p>
-              </div>
-            </div>
-
-            <!-- プレビュー -->
-            <div id="previewContainer" class="hidden">
-              <div class="flex flex-wrap gap-4">
-                <div id="imagePreview" class="hidden">
-                  <img src="" alt="プレビュー" class="max-w-full h-auto rounded-lg shadow-sm">
-                </div>
-                <div id="videoPreview" class="hidden">
-                  <video controls class="max-w-full h-auto rounded-lg shadow-sm">
-                    お使いのブラウザは動画の再生に対応していません。
-                  </video>
-                </div>
-              </div>
-            </div>
-
-            <!-- エラーメッセージ -->
-            <div id="errorMessage" class="hidden text-sm text-red-600 bg-red-50 p-3 rounded-md"></div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              class="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+        <!-- ファイルアップロード -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">メディアファイル</label>
+          <div
+            id="dropZone"
+            class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors"
+          >
+            <input
+              type="file"
+              id="fileInput"
+              class="hidden"
+              accept="image/*,video/*"
+              multiple
             >
-              投稿する
-            </button>
+            <div class="space-y-2">
+              <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <p class="text-sm text-gray-600">
+                ファイルをドラッグ＆ドロップするか、
+                <span class="text-indigo-600 hover:text-indigo-500 cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                  クリックして選択
+                </span>
+              </p>
+              <p class="text-xs text-gray-500">
+                対応ファイル: JPG, PNG, MOV, MP4<br>
+                画像: 8MB以内, 動画: 30MB以内
+              </p>
+            </div>
           </div>
-        </form>
-      </div>
-    </main>
-  </div>
+          <!-- プレビューエリア -->
+          <div id="previewContainer" class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hidden"></div>
+        </div>
 
-  <!-- ローディングオーバーレイ -->
-  <div id="loading" class="fixed inset-0 bg-white bg-opacity-90 flex flex-col justify-center items-center z-50 hidden">
-    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-    <p id="loadingText" class="mt-4 text-gray-700">処理中...</p>
+        <!-- プラットフォーム選択 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">投稿先</label>
+          <div class="flex space-x-4">
+            <label class="inline-flex items-center">
+              <input type="checkbox" name="platforms" value="x" class="form-checkbox h-5 w-5 text-indigo-600">
+              <span class="ml-2 text-gray-700">X</span>
+            </label>
+            <label class="inline-flex items-center">
+              <input type="checkbox" name="platforms" value="threads" class="form-checkbox h-5 w-5 text-indigo-600">
+              <span class="ml-2 text-gray-700">Threads</span>
+            </label>
+            <label class="inline-flex items-center">
+              <input type="checkbox" name="platforms" value="instagram" class="form-checkbox h-5 w-5 text-indigo-600">
+              <span class="ml-2 text-gray-700">Instagram</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- エラーメッセージ -->
+        <div id="errorMessage" class="hidden text-red-600 text-sm"></div>
+
+        <!-- 送信ボタン -->
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            投稿する
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ローディング表示 -->
+    <div id="loading" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+      <div class="bg-white p-4 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-2">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <span class="text-gray-700">処理中...</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     // 文字数カウント
-    document.getElementById('postText').addEventListener('input', function() {
-      const charCount = this.value.length;
-      document.getElementById('charCount').textContent = `${charCount}/280`;
+    const postText = document.getElementById('postText');
+    const charCount = document.getElementById('charCount');
+    
+    postText.addEventListener('input', () => {
+      const count = postText.value.length;
+      charCount.textContent = `${count}/280`;
     });
 
     // ファイルアップロード処理
+    const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
     const previewContainer = document.getElementById('previewContainer');
-    const imagePreview = document.getElementById('imagePreview');
-    const videoPreview = document.getElementById('videoPreview');
-    const errorMessage = document.getElementById('errorMessage');
+    const files = [];
 
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      // ファイルサイズチェック
-      const maxSize = file.type.startsWith('video/') ? 30 * 1024 * 1024 : 8 * 1024 * 1024;
-      if (file.size > maxSize) {
-        showError(`ファイルサイズが大きすぎます。${file.type.startsWith('video/') ? '30MB' : '8MB'}以内のファイルを選択してください。`);
-        return;
-      }
-
-      // プレビュー表示
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          imagePreview.querySelector('img').src = e.target.result;
-          imagePreview.classList.remove('hidden');
-          videoPreview.classList.add('hidden');
-          previewContainer.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type.startsWith('video/')) {
-        const video = videoPreview.querySelector('video');
-        video.src = URL.createObjectURL(file);
-        videoPreview.classList.remove('hidden');
-        imagePreview.classList.add('hidden');
-        previewContainer.classList.remove('hidden');
-      } else {
-        showError('対応していないファイル形式です。');
-      }
-    });
-
-    // ドラッグ＆ドロップ
-    const dropZone = document.querySelector('.border-dashed');
+    // ドラッグ＆ドロップイベント
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
       dropZone.addEventListener(eventName, preventDefaults, false);
     });
@@ -369,84 +337,188 @@
       dropZone.addEventListener(eventName, unhighlight, false);
     });
 
-    function highlight(e) {
-      dropZone.classList.add('border-blue-500');
+    function highlight() {
+      dropZone.classList.add('border-indigo-500');
     }
 
-    function unhighlight(e) {
-      dropZone.classList.remove('border-blue-500');
+    function unhighlight() {
+      dropZone.classList.remove('border-indigo-500');
     }
 
     dropZone.addEventListener('drop', handleDrop, false);
+    fileInput.addEventListener('change', handleFiles, false);
 
     function handleDrop(e) {
       const dt = e.dataTransfer;
-      const file = dt.files[0];
-      fileInput.files = dt.files;
-      const event = new Event('change');
-      fileInput.dispatchEvent(event);
+      const droppedFiles = dt.files;
+      handleFiles({ target: { files: droppedFiles } });
     }
 
+    function handleFiles(e) {
+      const uploadedFiles = Array.from(e.target.files);
+      
+      // ファイルサイズと形式のチェック
+      for (const file of uploadedFiles) {
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        
+        if (!isImage && !isVideo) {
+          showError('対応していないファイル形式です');
+          return;
+        }
+
+        const maxSize = isImage ? 8 * 1024 * 1024 : 30 * 1024 * 1024;
+        if (file.size > maxSize) {
+          showError(`${isImage ? '画像' : '動画'}ファイルは${isImage ? '8MB' : '30MB'}以内にしてください`);
+          return;
+        }
+
+        files.push(file);
+      }
+
+      // プレビュー表示
+      showPreviews();
+    }
+
+    function showPreviews() {
+      previewContainer.innerHTML = '';
+      previewContainer.classList.remove('hidden');
+
+      files.forEach((file, index) => {
+        const preview = document.createElement('div');
+        preview.className = 'relative group';
+        
+        if (file.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          img.className = 'w-full h-32 object-cover rounded';
+          preview.appendChild(img);
+        } else {
+          const video = document.createElement('video');
+          video.src = URL.createObjectURL(file);
+          video.className = 'w-full h-32 object-cover rounded';
+          video.controls = true;
+          preview.appendChild(video);
+        }
+
+        // 削除ボタン
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity';
+        deleteBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        deleteBtn.onclick = () => {
+          files.splice(index, 1);
+          showPreviews();
+        };
+        preview.appendChild(deleteBtn);
+
+        previewContainer.appendChild(preview);
+      });
+    }
+
+    // エラーメッセージ表示
     function showError(message) {
-      errorMessage.textContent = message;
-      errorMessage.classList.remove('hidden');
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = message;
+      errorDiv.classList.remove('hidden');
       setTimeout(() => {
-        errorMessage.classList.add('hidden');
+        errorDiv.classList.add('hidden');
       }, 5000);
     }
 
+    // ローディング表示
     function showLoading(message = '処理中...') {
-      document.getElementById('loadingText').textContent = message;
-      document.getElementById('loading').classList.remove('hidden');
+      const loadingDiv = document.getElementById('loading');
+      loadingDiv.querySelector('span').textContent = message;
+      loadingDiv.classList.remove('hidden');
     }
 
+    // ローディング非表示
     function hideLoading() {
       document.getElementById('loading').classList.add('hidden');
     }
 
-    // フォーム送信
-    document.getElementById('postForm').addEventListener('submit', function(e) {
+    // フォーム送信処理
+    document.getElementById('postForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const postText = document.getElementById('postText').value;
-      const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platform"]:checked'))
-        .map(checkbox => checkbox.value);
 
-      if (!postText && !fileInput.files[0]) {
+      // 入力値の取得
+      const text = postText.value;
+      const platforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
+
+      if (!text && files.length === 0) {
         showError('投稿内容またはファイルを入力してください');
         return;
       }
 
-      if (selectedPlatforms.length === 0) {
+      if (platforms.length === 0) {
         showError('投稿先を選択してください');
         return;
       }
 
       showLoading('投稿中...');
 
-      // ここに投稿処理を実装
-      google.script.run
-        .withSuccessHandler(function(result) {
-          hideLoading();
-          if (result.success) {
-            // 投稿成功時の処理
-            document.getElementById('postText').value = '';
-            fileInput.value = '';
-            previewContainer.classList.add('hidden');
-            showError('投稿が完了しました');
-          } else {
-            showError(result.error || '投稿に失敗しました');
+      try {
+        // ファイルのアップロード
+        const uploadedFiles = [];
+        for (const file of files) {
+          const reader = new FileReader();
+          const base64Data = await new Promise((resolve) => {
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(file);
+          });
+
+          uploadedFiles.push({
+            base64Data,
+            fileName: file.name,
+            mimeType: file.type
+          });
+        }
+
+        // 投稿データの作成
+        const postData = {
+          text,
+          files: uploadedFiles,
+          platforms: {
+            x: platforms.includes('x'),
+            threads: platforms.includes('threads'),
+            instagram: platforms.includes('instagram')
           }
-        })
-        .withFailureHandler(function(error) {
-          hideLoading();
-          showError('投稿に失敗しました: ' + error.toString());
-        })
-        .submitPost({
-          text: postText,
-          platforms: selectedPlatforms,
-          file: fileInput.files[0]
-        });
+        };
+
+        // 投稿処理の実行
+        const response = await google.script.run
+          .withSuccessHandler(handleSuccess)
+          .withFailureHandler(handleError)
+          .submitPost(postData);
+
+      } catch (error) {
+        handleError(error);
+      }
     });
+
+    // 成功時の処理
+    function handleSuccess(response) {
+      hideLoading();
+      
+      if (response.success) {
+        // フォームのリセット
+        postText.value = '';
+        files.length = 0;
+        showPreviews();
+        document.querySelectorAll('input[name="platforms"]').forEach(cb => cb.checked = false);
+        
+        // 成功メッセージ
+        alert('投稿が完了しました');
+      } else {
+        showError(response.error);
+      }
+    }
+
+    // エラー時の処理
+    function handleError(error) {
+      hideLoading();
+      showError(error.message || '投稿に失敗しました');
+    }
   </script>
 </body>
 </html>
