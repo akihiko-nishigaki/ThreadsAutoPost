@@ -281,8 +281,8 @@ function getThreadsPostInfoDetail(postInfo){
 /**
  * テキストのみ投稿を作成する
  * @param {string} text テキスト
- * @param {number} resId 返信元ID
- * @param {number} quotePostId 引用元ID
+ * @param {string} resId 返信元ID
+ * @param {string} quotePostId 引用元ID
  */
 function singlePostTextOnly(text, resId, quotePostId){
 
@@ -372,8 +372,8 @@ function singlePostTextOnly(text, resId, quotePostId){
  * @param {string} movieUrl 動画ファイルURL
  * @param {string} fileType ファイルタイプ(IMAGE/VIDEO)
  * @param {string} text テキスト
- * @param {number} resId 返信元ID
- * @param {number} quotePostId 引用元ID
+ * @param {string} resId 返信元ID
+ * @param {string} quotePostId 引用元ID
  */
 function singlePostAttachFile(fileUrl, movieUrl, fileType, text, resId, quotePostId){
 
@@ -411,7 +411,7 @@ function singlePostAttachFile(fileUrl, movieUrl, fileType, text, resId, quotePos
   }
 
   // quotePostIdが存在する場合のみ、payloadに追加
-  if (quotePostId) {
+  if (quotePostId != "") {
     payload.quote_post_id = quotePostId;
   }
 
@@ -478,8 +478,8 @@ function singlePostAttachFile(fileUrl, movieUrl, fileType, text, resId, quotePos
  * @param {string} fileUrl ファイルURL
  * @param {string} movieUrl 動画ファイルURL
  * @param {string} fileType ファイルタイプ(image/video)
- * @param {number} resId 返信元ID
- * @param {number} quotePostId 引用元ID
+ * @param {string} resId 返信元ID
+ * @param {string} quotePostId 引用元ID
  */
 function uploadSingleImageVideo(fileUrl, movieUrl, fileType, resId, quotePostId){
 
@@ -515,7 +515,7 @@ function uploadSingleImageVideo(fileUrl, movieUrl, fileType, resId, quotePostId)
   }
 
   // quotePostIdが存在する場合のみ、payloadに追加
-  if (quotePostId) {
+  if (quotePostId != "") {
     payload.quote_post_id = quotePostId;
   }
 

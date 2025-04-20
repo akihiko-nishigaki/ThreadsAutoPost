@@ -101,7 +101,9 @@ function getSystemProperty(){
   let threadsClientId = sheet.getRange(PROPERTY_CELL.THREADS_CLIENT_ID).getValue();
   let threadsClientSecret = sheet.getRange(PROPERTY_CELL.THREADS_CLIENT_SECRET).getValue();
   let selectedSheetName = sheet.getRange(PROPERTY_CELL.SELECTED_SHEET_NAME).getValue();
-
+  let webPostDefaultX = sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_X).getValue();
+  let webPostDefaultThreads = sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_THREADS).getValue();
+  let webPostDefaultInstagram = sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_INSTAGRAM).getValue();
 
   return{
     uploadImageFoloderId: uploadImageFoloderId,
@@ -124,7 +126,10 @@ function getSystemProperty(){
     threadsLongTimeTokenExpiry: threadsLongTimeTokenExpiry,
     threadsClientId: threadsClientId,
     threadsClientSecret: threadsClientSecret,
-    selectedSheetName: selectedSheetName
+    selectedSheetName: selectedSheetName,
+    webPostDefaultX: webPostDefaultX,
+    webPostDefaultThreads: webPostDefaultThreads,
+    webPostDefaultInstagram: webPostDefaultInstagram
   }
 }
 

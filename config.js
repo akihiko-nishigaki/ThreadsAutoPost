@@ -71,8 +71,81 @@ const CONFIG = {
   ENUM_INSTA_UL_TYPE:{
     SINGLE: 1,
     MULTI: 2,
-  }
+  },
 
+  // アプリケーション全般の設定
+  APP: {
+    MAX_TEXT_LENGTH: 280,  // 最大文字数
+    MAX_IMAGE_SIZE: 8 * 1024 * 1024,  // 画像の最大サイズ（8MB）
+    MAX_VIDEO_SIZE: 30 * 1024 * 1024,  // 動画の最大サイズ（30MB）
+    ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png'],
+    ALLOWED_VIDEO_TYPES: ['video/mp4', 'video/quicktime']
+  },
+
+  // Google Drive設定
+  GOOGLE_DRIVE: {
+    FOLDER_ID: '',  // Google Driveのフォルダーを指定
+  },
+
+  // X（Twitter）設定
+  X: {
+    MAX_IMAGES: 4,  // 最大画像数
+    MAX_VIDEO_SIZE: 512 * 1024 * 1024,  // 動画の最大サイズ（512MB）
+  },
+
+  // Threads設定
+  THREADS: {
+    MAX_IMAGES: 10,  // 最大画像数
+    MAX_VIDEO_SIZE: 30 * 1024 * 1024,  // 動画の最大サイズ（30MB）
+  },
+
+  // Instagram設定
+  INSTAGRAM: {
+    MAX_IMAGES: 10,  // 最大画像数
+    MAX_VIDEO_SIZE: 100 * 1024 * 1024,  // 動画の最大サイズ（100MB）
+  },
+
+  // ファイルタイプ文字列
+  STRING_IMAGE: 'IMAGE',
+  STRING_VIDEO: 'VIDEO',
+
+  // Instagramアップロードタイプ
+  ENUM_INSTA_UL_TYPE: {
+    SINGLE: 1,  // 単一投稿
+    CAROUSEL: 2  // カルーセル投稿
+  },
+
+  // プロパティのセル位置
+  PROPERTY_CELL: {
+    // X（Twitter）関連
+    X_API_CLIENT: 'B2',  // APIクライアントID
+    X_API_CLIENT_SECRET: 'B3',  // APIクライアントシークレット
+    X_OAUTH2_TWITTER: 'B4',  // OAuth2トークン
+    X_CODE_VERIFIER: 'B5',  // コード検証子
+    X_USER_ID: 'B6',  // ユーザーID
+
+    // Threads関連
+    THREADS_CLIENT_ID: 'B7',  // クライアントID
+    THREADS_CLIENT_SECRET: 'B8',  // クライアントシークレット
+    THREADS_LONG_TIME_TOKEN: 'B9',  // 長期トークン
+
+    // Instagram関連
+    INSTA_APP_ID: 'B10',  // アプリID
+    INSTA_APP_SECRET: 'B11',  // アプリシークレット
+    INSTA_SHORT_TIME_TOKEN: 'B12',  // 短期トークン
+    INSTA_LONG_ACCESS_TOKEN: 'B13',  // 長期アクセストークン
+    INSTA_BUSINESS_ID: 'B14',  // ビジネスアカウントID
+  },
+
+  // アカウント設定状態のセル位置
+  CELL_SETTING_STATUS_X: 'C2',  // X（Twitter）
+  CELL_SETTING_STATUS_THREADS: 'C3',  // Threads
+  CELL_SETTING_STATUS_INSTA: 'C4',  // Instagram
+
+  // SNSチェックボックスのセル位置
+  CELL_SETTING_CHECKBOX_X: 'D2',  // X（Twitter）
+  CELL_SETTING_CHECKBOX_THREADS: 'D3',  // Threads
+  CELL_SETTING_CHECKBOX_INSTA: 'D4',  // Instagram
 };
 
 const SNS_CONVERT = {
@@ -143,4 +216,7 @@ const PROPERTY_CELL ={
   THREADS_CLIENT_ID: 'B18',
   THREADS_CLIENT_SECRET: 'B19',
   SELECTED_SHEET_NAME: 'B20',
+  WEB_POST_DEFAULT_X: 'B21',
+  WEB_POST_DEFAULT_THREADS: 'B22',
+  WEB_POST_DEFAULT_INSTAGRAM: 'B23',
 };

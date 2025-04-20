@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SNS投稿アプリ</title>
+  <title>まとめ投稿くん</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
@@ -196,84 +196,137 @@
       display: block;
     }
 
+    /* トグルスイッチのスタイル */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: #2196F3;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(26px);
+    }
+
   </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 min-h-screen">
   <div class="container mx-auto px-4 py-8">
     <!-- ヘッダー -->
-    <header class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-800">SNS投稿アプリ</h1>
+    <header class="bg-white shadow rounded-lg p-6 mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">まとめ投稿くん</h1>
+      <p class="text-sm text-gray-600 mt-2">複数のSNSに一括投稿</p>
     </header>
 
     <!-- 投稿フォーム -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+    <div class="bg-white shadow rounded-lg p-6 mb-8">
       <form id="postForm" class="space-y-6">
         <!-- テキストエリア -->
         <div>
           <label for="postText" class="block text-sm font-medium text-gray-700 mb-2">投稿内容</label>
-          <textarea
-            id="postText"
-            name="postText"
-            rows="4"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="投稿内容を入力してください"
-            maxlength="280"
-          ></textarea>
-          <div class="flex justify-end mt-1">
-            <span id="charCount" class="text-sm text-gray-500">0/280</span>
+          <div class="relative">
+            <textarea
+              id="postText"
+              name="postText"
+              rows="4"
+              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="投稿内容を入力してください"
+              maxlength="280"
+            ></textarea>
+            <div class="absolute bottom-2 right-2 text-sm text-gray-500">
+              <span id="charCount">0</span>/280
+            </div>
+          </div>
+        </div>
+
+        <!-- プラットフォーム選択 -->
+        <div class="space-y-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">投稿先</label>
+          <div class="flex items-center space-x-4">
+            <label class="toggle-switch">
+              <input type="checkbox" name="platform" value="x">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="text-sm text-gray-700">X（旧Twitter）</span>
+          </div>
+          <div class="flex items-center space-x-4">
+            <label class="toggle-switch">
+              <input type="checkbox" name="platform" value="threads">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="text-sm text-gray-700">Threads</span>
+          </div>
+          <div class="flex items-center space-x-4">
+            <label class="toggle-switch">
+              <input type="checkbox" name="platform" value="instagram">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="text-sm text-gray-700">Instagram</span>
           </div>
         </div>
 
         <!-- ファイルアップロード -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">メディアファイル</label>
-          <div
-            id="dropZone"
-            class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors"
-          >
-            <input
-              type="file"
-              id="fileInput"
-              class="hidden"
-              accept="image/*,video/*"
-              multiple
+        <div id="fileUploadSection">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">メディアファイル</label>
+            <div
+              id="dropZone"
+              class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors"
             >
-            <div class="space-y-2">
-              <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <p class="text-sm text-gray-600">
-                ファイルをドラッグ＆ドロップするか、
-                <span class="text-indigo-600 hover:text-indigo-500 cursor-pointer" onclick="document.getElementById('fileInput').click()">
-                  クリックして選択
-                </span>
-              </p>
-              <p class="text-xs text-gray-500">
-                対応ファイル: JPG, PNG, MOV, MP4<br>
-                画像: 8MB以内, 動画: 30MB以内
-              </p>
+              <input
+                type="file"
+                id="fileInput"
+                class="hidden"
+                accept="image/*,video/*"
+                multiple
+              >
+              <div class="space-y-2">
+                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <p class="text-sm text-gray-600">
+                  ファイルをドラッグ＆ドロップするか、
+                  <span class="text-indigo-600 hover:text-indigo-500 cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                    クリックして選択
+                  </span>
+                </p>
+                <p class="text-xs text-gray-500">
+                  対応ファイル: JPG, PNG, MOV, MP4<br>
+                  画像: 8MB以内, 動画: 30MB以内
+                </p>
+              </div>
             </div>
-          </div>
-          <!-- プレビューエリア -->
-          <div id="previewContainer" class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hidden"></div>
-        </div>
-
-        <!-- プラットフォーム選択 -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">投稿先</label>
-          <div class="flex space-x-4">
-            <label class="inline-flex items-center">
-              <input type="checkbox" name="platforms" value="x" class="form-checkbox h-5 w-5 text-indigo-600">
-              <span class="ml-2 text-gray-700">X</span>
-            </label>
-            <label class="inline-flex items-center">
-              <input type="checkbox" name="platforms" value="threads" class="form-checkbox h-5 w-5 text-indigo-600">
-              <span class="ml-2 text-gray-700">Threads</span>
-            </label>
-            <label class="inline-flex items-center">
-              <input type="checkbox" name="platforms" value="instagram" class="form-checkbox h-5 w-5 text-indigo-600">
-              <span class="ml-2 text-gray-700">Instagram</span>
-            </label>
+            <!-- プレビューエリア -->
+            <div id="previewContainer" class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hidden"></div>
           </div>
         </div>
 
@@ -281,10 +334,10 @@
         <div id="errorMessage" class="hidden text-red-600 text-sm"></div>
 
         <!-- 送信ボタン -->
-        <div class="flex justify-end">
+        <div>
           <button
             type="submit"
-            class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             投稿する
           </button>
@@ -304,221 +357,267 @@
   </div>
 
   <script>
-    // 文字数カウント
-    const postText = document.getElementById('postText');
+    // エラーメッセージ表示用の関数
+    function showError(message) {
+        const errorContainer = document.getElementById('errorContainer');
+        if (!errorContainer) {
+            const container = document.createElement('div');
+            container.id = 'errorContainer';
+            container.className = 'fixed top-4 right-4 z-50';
+            document.body.appendChild(container);
+        }
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2';
+        errorDiv.role = 'alert';
+        
+        const messageSpan = document.createElement('span');
+        messageSpan.className = 'block sm:inline';
+        messageSpan.textContent = message;
+        
+        const closeButton = document.createElement('button');
+        closeButton.className = 'absolute top-0 right-0 px-4 py-3';
+        closeButton.innerHTML = '<span class="text-red-500 hover:text-red-800">&times;</span>';
+        closeButton.onclick = function() {
+            errorDiv.remove();
+        };
+        
+        errorDiv.appendChild(messageSpan);
+        errorDiv.appendChild(closeButton);
+        document.getElementById('errorContainer').appendChild(errorDiv);
+    }
+
+    // 成功メッセージ表示用の関数
+    function showSuccess(message) {
+        const successContainer = document.getElementById('successContainer');
+        if (!successContainer) {
+            const container = document.createElement('div');
+            container.id = 'successContainer';
+            container.className = 'fixed top-4 right-4 z-50';
+            document.body.appendChild(container);
+        }
+        
+        const successDiv = document.createElement('div');
+        successDiv.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-2';
+        successDiv.role = 'alert';
+        
+        const messageSpan = document.createElement('span');
+        messageSpan.className = 'block sm:inline';
+        messageSpan.textContent = message;
+        
+        const closeButton = document.createElement('button');
+        closeButton.className = 'absolute top-0 right-0 px-4 py-3';
+        closeButton.innerHTML = '<span class="text-green-500 hover:text-green-800">&times;</span>';
+        closeButton.onclick = function() {
+            successDiv.remove();
+        };
+        
+        successDiv.appendChild(messageSpan);
+        successDiv.appendChild(closeButton);
+        document.getElementById('successContainer').appendChild(successDiv);
+    }
+
+    // エラーメッセージをクリアする関数
+    function clearError() {
+        const errorContainer = document.getElementById('errorContainer');
+        if (errorContainer) {
+            errorContainer.innerHTML = '';
+        }
+    }
+
+    // 文字数カウント機能
+    const textArea = document.getElementById('postText');
     const charCount = document.getElementById('charCount');
-    
-    postText.addEventListener('input', () => {
-      const count = postText.value.length;
-      charCount.textContent = `${count}/280`;
+
+    textArea.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
     });
 
     // ファイルアップロード処理
-    const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
     const previewContainer = document.getElementById('previewContainer');
-    const files = [];
+    let files = [];
 
-    // ドラッグ＆ドロップイベント
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, preventDefaults, false);
-    });
+    // ファイルの検証
+    function validateFile(file) {
+        const maxImageSize = 8 * 1024 * 1024; // 8MB
+        const maxVideoSize = 30 * 1024 * 1024; // 30MB
+        const allowedImageTypes = ['image/jpeg', 'image/png'];
+        const allowedVideoTypes = ['video/mp4', 'video/quicktime'];
 
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropZone.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight() {
-      dropZone.classList.add('border-indigo-500');
-    }
-
-    function unhighlight() {
-      dropZone.classList.remove('border-indigo-500');
-    }
-
-    dropZone.addEventListener('drop', handleDrop, false);
-    fileInput.addEventListener('change', handleFiles, false);
-
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      const droppedFiles = dt.files;
-      handleFiles({ target: { files: droppedFiles } });
-    }
-
-    function handleFiles(e) {
-      const uploadedFiles = Array.from(e.target.files);
-      
-      // ファイルサイズと形式のチェック
-      for (const file of uploadedFiles) {
-        const isImage = file.type.startsWith('image/');
-        const isVideo = file.type.startsWith('video/');
-        
-        if (!isImage && !isVideo) {
-          showError('対応していないファイル形式です');
-          return;
-        }
-
-        const maxSize = isImage ? 8 * 1024 * 1024 : 30 * 1024 * 1024;
-        if (file.size > maxSize) {
-          showError(`${isImage ? '画像' : '動画'}ファイルは${isImage ? '8MB' : '30MB'}以内にしてください`);
-          return;
-        }
-
-        files.push(file);
-      }
-
-      // プレビュー表示
-      showPreviews();
-    }
-
-    function showPreviews() {
-      previewContainer.innerHTML = '';
-      previewContainer.classList.remove('hidden');
-
-      files.forEach((file, index) => {
-        const preview = document.createElement('div');
-        preview.className = 'relative group';
-        
-        if (file.type.startsWith('image/')) {
-          const img = document.createElement('img');
-          img.src = URL.createObjectURL(file);
-          img.className = 'w-full h-32 object-cover rounded';
-          preview.appendChild(img);
+        if (allowedImageTypes.includes(file.type)) {
+            if (file.size > maxImageSize) {
+                showError('画像ファイルは8MB以下にしてください');
+                return false;
+            }
+        } else if (allowedVideoTypes.includes(file.type)) {
+            if (file.size > maxVideoSize) {
+                showError('動画ファイルは30MB以下にしてください');
+                return false;
+            }
         } else {
-          const video = document.createElement('video');
-          video.src = URL.createObjectURL(file);
-          video.className = 'w-full h-32 object-cover rounded';
-          video.controls = true;
-          preview.appendChild(video);
+            showError('JPG、PNG、MP4、MOV形式のファイルのみアップロード可能です');
+            return false;
         }
-
-        // 削除ボタン
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity';
-        deleteBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
-        deleteBtn.onclick = () => {
-          files.splice(index, 1);
-          showPreviews();
-        };
-        preview.appendChild(deleteBtn);
-
-        previewContainer.appendChild(preview);
-      });
+        return true;
     }
 
-    // エラーメッセージ表示
-    function showError(message) {
-      const errorDiv = document.getElementById('errorMessage');
-      errorDiv.textContent = message;
-      errorDiv.classList.remove('hidden');
-      setTimeout(() => {
-        errorDiv.classList.add('hidden');
-      }, 5000);
+    // プレビュー表示
+    function showPreviews() {
+        previewContainer.innerHTML = '';
+        if (files.length > 0) {
+            previewContainer.classList.remove('hidden');
+            files.forEach((file, index) => {
+                const preview = document.createElement('div');
+                preview.className = 'relative';
+                
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.className = 'w-full h-32 object-cover rounded';
+                    preview.appendChild(img);
+                } else if (file.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = URL.createObjectURL(file);
+                    video.className = 'w-full h-32 object-cover rounded';
+                    video.controls = true;
+                    preview.appendChild(video);
+                }
+
+                const removeButton = document.createElement('button');
+                removeButton.className = 'absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center m-1';
+                removeButton.textContent = '×';
+                removeButton.onclick = () => {
+                    files.splice(index, 1);
+                    showPreviews();
+                };
+                preview.appendChild(removeButton);
+                previewContainer.appendChild(preview);
+            });
+        } else {
+            previewContainer.classList.add('hidden');
+        }
     }
 
-    // ローディング表示
-    function showLoading(message = '処理中...') {
-      const loadingDiv = document.getElementById('loading');
-      loadingDiv.querySelector('span').textContent = message;
-      loadingDiv.classList.remove('hidden');
-    }
+    // ファイル選択イベント
+    fileInput.addEventListener('change', (e) => {
+        const newFiles = Array.from(e.target.files);
+        newFiles.forEach(file => {
+            if (validateFile(file)) {
+                files.push(file);
+            }
+        });
+        showPreviews();
+        fileInput.value = '';
+    });
 
-    // ローディング非表示
-    function hideLoading() {
-      document.getElementById('loading').classList.add('hidden');
-    }
+    // ドラッグ&ドロップイベント
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-500');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-blue-500');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-500');
+        const newFiles = Array.from(e.dataTransfer.files);
+        newFiles.forEach(file => {
+            if (validateFile(file)) {
+                files.push(file);
+            }
+        });
+        showPreviews();
+    });
 
     // フォーム送信処理
-    document.getElementById('postForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    document.getElementById('postForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        clearError();
 
-      // 入力値の取得
-      const text = postText.value;
-      const platforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
+        const text = textArea.value;
+        const platforms = Array.from(document.querySelectorAll('input[name="platform"]:checked')).map(cb => cb.value);
 
-      if (!text && files.length === 0) {
-        showError('投稿内容またはファイルを入力してください');
-        return;
-      }
-
-      if (platforms.length === 0) {
-        showError('投稿先を選択してください');
-        return;
-      }
-
-      showLoading('投稿中...');
-
-      try {
-        // ファイルのアップロード
-        const uploadedFiles = [];
-        for (const file of files) {
-          const reader = new FileReader();
-          const base64Data = await new Promise((resolve) => {
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.readAsDataURL(file);
-          });
-
-          uploadedFiles.push({
-            base64Data,
-            fileName: file.name,
-            mimeType: file.type
-          });
+        // バリデーション
+        if (!text && files.length === 0) {
+            showError('テキストまたはメディアファイルを入力してください');
+            return;
         }
 
-        // 投稿データの作成
-        const postData = {
-          text,
-          files: uploadedFiles,
-          platforms: {
-            x: platforms.includes('x'),
-            threads: platforms.includes('threads'),
-            instagram: platforms.includes('instagram')
-          }
-        };
+        if (platforms.length === 0) {
+            showError('投稿先を1つ以上選択してください');
+            return;
+        }
 
-        // 投稿処理の実行
-        const response = await google.script.run
-          .withSuccessHandler(handleSuccess)
-          .withFailureHandler(handleError)
-          .submitPost(postData);
+        // 投稿中の状態を表示
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.textContent = '投稿中...';
+        submitButton.disabled = true;
 
-      } catch (error) {
-        handleError(error);
-      }
+        try {
+            // 投稿データの準備
+            const postData = {
+                text: text,
+                platforms: platforms,
+                files: files
+            };
+
+            // Google Apps Scriptの関数を呼び出し
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    if (response && response.success) {
+                        // 投稿成功時のみフォームをリセット
+                        textArea.value = '';
+                        charCount.textContent = '0';
+                        files.length = 0;
+                        showPreviews();
+                        document.querySelectorAll('input[name="platform"]').forEach(cb => cb.checked = false);
+                        showSuccess('投稿が完了しました');
+                    } else {
+                        showError(response?.error || '投稿に失敗しました');
+                    }
+                    // ボタンを元の状態に戻す
+                    submitButton.textContent = originalButtonText;
+                    submitButton.disabled = false;
+                })
+                .withFailureHandler(function(error) {
+                    showError('投稿に失敗しました: ' + error.message);
+                    // ボタンを元の状態に戻す
+                    submitButton.textContent = originalButtonText;
+                    submitButton.disabled = false;
+                })
+                .submitPost(postData);
+
+        } catch (error) {
+            showError('投稿に失敗しました: ' + error.message);
+            // ボタンを元の状態に戻す
+            submitButton.textContent = originalButtonText;
+            submitButton.disabled = false;
+        }
     });
 
-    // 成功時の処理
-    function handleSuccess(response) {
-      hideLoading();
-      
-      if (response.success) {
-        // フォームのリセット
-        postText.value = '';
-        files.length = 0;
-        showPreviews();
-        document.querySelectorAll('input[name="platforms"]').forEach(cb => cb.checked = false);
-        
-        // 成功メッセージ
-        alert('投稿が完了しました');
-      } else {
-        showError(response.error);
-      }
-    }
+    // システムシートから設定を取得
+    const defaultSettings = {
+      x: <?= getSystemProperty().WEB_POST_DEFAULT_X === 'ON' ? 'true' : 'false' ?>,
+      threads: <?= getSystemProperty().WEB_POST_DEFAULT_THREAD === 'ON' ? 'true' : 'false' ?>,
+      instagram: <?= getSystemProperty().WEB_POST_DEFAULT_INSTAGRAM === 'ON' ? 'true' : 'false' ?>
+    };
 
-    // エラー時の処理
-    function handleError(error) {
-      hideLoading();
-      showError(error.message || '投稿に失敗しました');
-    }
+    // 投稿先のチェックボックスを設定
+    document.addEventListener('DOMContentLoaded', function() {
+      const xCheckbox = document.querySelector('input[value="x"]');
+      const threadsCheckbox = document.querySelector('input[value="threads"]');
+      const instagramCheckbox = document.querySelector('input[value="instagram"]');
+
+      if (xCheckbox) xCheckbox.checked = defaultSettings.x;
+      if (threadsCheckbox) threadsCheckbox.checked = defaultSettings.threads;
+      if (instagramCheckbox) instagramCheckbox.checked = defaultSettings.instagram;
+    });
   </script>
 </body>
 </html>
