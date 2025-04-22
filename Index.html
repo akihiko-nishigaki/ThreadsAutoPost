@@ -598,7 +598,11 @@
               try {
                 const result = await filePromise;
                 if (result && result.url) {
-                  uploadedFiles.push(result.url);
+                  uploadedFiles.push({
+                    url: result.url,
+                    type: file.type.startsWith('image/') ? 'image' : 'video',
+                    movieDirectUrl: file.type.startsWith('video/') ? result.url : null
+                  });
                 } else {
                   throw new Error('アップロードされたファイルのURLが取得できませんでした');
                 }
@@ -614,7 +618,7 @@
             const postData = {
               text: text,
               platforms: platforms,
-              fileUrls: uploadedFiles
+              files: uploadedFiles
             };
 
             // Google Apps Scriptの関数を呼び出し
