@@ -417,11 +417,50 @@ function getScriptUrl() {
  * @return {HtmlOutput} HTML出力
  */
 function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('SNS投稿アプリケーション')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setFaviconUrl('https://www.google.com/favicon.ico');
+  try {
+    console.log('doGet called'); // 実行ログ
+    
+    // テンプレートを作成
+    const template = HtmlService.createTemplateFromFile('Index');
+    
+    // システムプロパティを取得
+    const systemProps = getSystemProperty();
+    console.log('System Properties:', systemProps);
+    
+    // 設定値をログ出力
+    console.log('Raw values:', {
+      x: systemProps.webPostDefaultX,
+      threads: systemProps.webPostDefaultThreads,
+      instagram: systemProps.webPostDefaultInstagram
+    });
+    
+    // テンプレートにデータを渡す
+    template.defaultSettings = {
+      x: String(systemProps.webPostDefaultX).toUpperCase() === 'ON',
+      threads: String(systemProps.webPostDefaultThreads).toUpperCase() === 'ON',
+      instagram: String(systemProps.webPostDefaultInstagram).toUpperCase() === 'ON'
+    };
+    
+    console.log('Final template settings:', template.defaultSettings);
+    
+    // テンプレートを評価してHTMLを生成
+    const htmlOutput = template.evaluate()
+      .setTitle('まとめ投稿くん')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+      .setFaviconUrl('https://www.google.com/images/favicon.ico')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    
+    console.log('HTML output generated successfully');
+    return htmlOutput;
+    
+  } catch (error) {
+    console.error('Error in doGet:', error);
+    // エラーが発生した場合はエラーページを表示
+    return HtmlService.createHtmlOutput(
+      `<h1>エラーが発生しました</h1><p>${error.message}</p>`
+    );
+  }
 }
 
 /**
@@ -431,4 +470,72 @@ function doGet() {
  */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+/**
+ * デフォルト設定を取得する
+ * @return {Object} デフォルト設定オブジェクト
+ */
+function getDefaultSettings() {
+  try {
+    Logger.log('デフォルト設定の取得を開始');
+    
+    // システムプロパティを取得
+    const systemProps = getSystemProperty();
+    
+    // 設定値の比較をログ出力
+    Logger.log('設定値の比較:', {
+      x: `"${systemProps.webPostDefaultX}" === "ON"`,
+      threads: `"${systemProps.webPostDefaultThreads}" === "ON"`,
+      instagram: `"${systemProps.webPostDefaultInstagram}" === "ON"`
+    });
+    
+    // 設定オブジェクトを作成
+    const settings = {
+      x: systemProps.webPostDefaultX === "ON",
+      threads: systemProps.webPostDefaultThreads === "ON",
+      instagram: systemProps.webPostDefaultInstagram === "ON"
+    };
+    
+    Logger.log('取得した設定:', settings);
+    return settings;
+    
+  } catch (error) {
+    Logger.log('デフォルト設定の取得中にエラーが発生:', error);
+    // エラーが発生した場合はデフォルト値を返す
+    return {
+      x: false,
+      threads: false,
+      instagram: false
+    };
+  }
+}
+
+/**
+ * デフォルト設定を保存する
+ * @param {Object} settings - 保存する設定
+ * @return {Object} 保存結果
+ */
+function saveDefaultSettings(settings) {
+  try {
+    Logger.log('デフォルト設定の保存を開始:', settings);
+    
+    // システムシートを取得
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS_NAME.SYSTEM);
+    
+    // 設定を保存
+    sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_X).setValue(settings.x ? 'ON' : 'OFF');
+    sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_THREADS).setValue(settings.threads ? 'ON' : 'OFF');
+    sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_INSTAGRAM).setValue(settings.instagram ? 'ON' : 'OFF');
+    
+    Logger.log('デフォルト設定を保存しました');
+    return { success: true };
+    
+  } catch (error) {
+    Logger.log('デフォルト設定の保存中にエラーが発生:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 }
