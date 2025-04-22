@@ -577,17 +577,17 @@
                     const base64Data = e.target.result.split(',')[1];
                     const result = await google.script.run
                       .withSuccessHandler(function(response) {
-                        if (response.success) {
-                          return response;
+                        console.log('Upload response:', response);
+                        if (response && response.success) {
+                          resolve(response);
                         } else {
-                          throw new Error(response.error || 'ファイルのアップロードに失敗しました');
+                          reject(new Error(response?.error || 'ファイルのアップロードに失敗しました'));
                         }
                       })
                       .withFailureHandler(function(error) {
-                        throw new Error('ファイルのアップロードに失敗しました: ' + error.message);
+                        reject(new Error('ファイルのアップロードに失敗しました: ' + error.message));
                       })
                       .uploadFile(base64Data, file.name, file.type);
-                    resolve(result);
                   } catch (error) {
                     reject(error);
                   }
@@ -597,7 +597,11 @@
               reader.readAsDataURL(file);
               try {
                 const result = await filePromise;
-                uploadedFiles.push(result.url);
+                if (result && result.url) {
+                  uploadedFiles.push(result.url);
+                } else {
+                  throw new Error('アップロードされたファイルのURLが取得できませんでした');
+                }
               } catch (error) {
                 showError(error.message);
                 submitButton.textContent = originalButtonText;
