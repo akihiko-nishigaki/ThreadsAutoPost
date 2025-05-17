@@ -363,8 +363,8 @@ function getFileExtension(url) {
  * @return {string} 'image' または 'video'
  */
 function getFileCategory(extension) {
-  if (CONFIG.IMAGE_EXTENSIONS.includes(extension)) return 'image';
-  if (CONFIG.VIDEO_EXTENSIONS.includes(extension)) return 'video';
+  if (CONFIG.IMAGE_EXTENSIONS.includes(extension)) return CONFIG.STRING_IMAGE;
+  if (CONFIG.VIDEO_EXTENSIONS.includes(extension)) return CONFIG.STRING_VIDEO;
   return 'unknown';
 }
 

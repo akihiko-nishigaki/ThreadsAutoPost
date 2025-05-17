@@ -710,6 +710,10 @@ function postTweetWithMultipleImages(tweetText, attachmentInfos, resId, quoteId)
     const mediaIds = [];
     for (const [index, attachmentInfo] of attachmentInfos.entries()) {
       let mediaId;
+
+      // 添付ファイルの情報をログ出力
+      Logger.log('attachmentInfo: ' + JSON.stringify(attachmentInfo));
+
       if ( attachmentInfo.fileCategory == CONFIG.STRING_IMAGE){
         mediaId = uploadImagesForX(attachmentInfo, index + 1);
       } else {
