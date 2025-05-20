@@ -120,7 +120,8 @@ function getThreadsToken() {
               {
                   headers: {
                       Authorization: 'Bearer ' + prop.threadsLongTimeToken
-                  }
+                  },
+                  muteHttpExceptions: true
               }
           );
           const userId = JSON.parse(response.getContentText()).id;
@@ -146,7 +147,8 @@ function getThreadsToken() {
               {
                   headers: {
                       Authorization: 'Bearer ' + longTermToken
-                  }
+                  },
+                  muteHttpExceptions: true
               }
           );
           const userId = JSON.parse(response.getContentText()).id;
@@ -255,7 +257,7 @@ function getThreadsPostInfoDetail(postInfo){
   Logger.log('URL：' + url);
 
   try {
-      const response = UrlFetchApp.fetch(url);
+      const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
       const responseCode = response.getResponseCode();
       const responseText = response.getContentText();
       
@@ -330,7 +332,10 @@ function singlePostTextOnly(text, resId, quotePostId){
 
   try {
     Logger.log('スレッド作成リクエストを送信');
-    const response = UrlFetchApp.fetch(url, createOptions);
+    const response = UrlFetchApp.fetch(url, {
+      ...createOptions,
+      muteHttpExceptions: true
+    });
     Logger.log(`スレッド作成レスポンス: ${response.getResponseCode()}`);
     
     Logger.log('API制限対策の待機開始（2秒）');
@@ -383,6 +388,7 @@ function singlePostAttachFile(fileUrl, movieUrl, fileType, text, resId, quotePos
   Logger.log('fileType:' + fileType);
   Logger.log('text:' + text);
   Logger.log('resId:' + resId);
+  Logger.log('quotePostId:' + quotePostId);
 
   // プロパティを取得
   const prop = getSystemProperty();
@@ -402,7 +408,8 @@ function singlePostAttachFile(fileUrl, movieUrl, fileType, text, resId, quotePos
   // 基本的なpayloadの設定
   let payload = {
     text: text,
-    access_token: prop.threadsLongTimeToken
+    access_token: prop.threadsLongTimeToken,
+    is_carousel_item: false
   };
 
   // resIdが存在する場合のみ、payloadに追加
@@ -415,11 +422,11 @@ function singlePostAttachFile(fileUrl, movieUrl, fileType, text, resId, quotePos
     payload.quote_post_id = quotePostId;
   }
 
-  if(fileType == "image"){
-    payload.media_type = "IMAGE";
+  if(fileType == CONFIG.STRING_IMAGE){
+    payload.media_type = CONFIG.STRING_IMAGE.toUpperCase();
     payload.image_url = fileUrl
   }else{
-    payload.media_type = "VIDEO";
+    payload.media_type = CONFIG.STRING_VIDEO.toUpperCase();
     payload.video_url = movieUrl;
   }
 
@@ -432,11 +439,17 @@ function singlePostAttachFile(fileUrl, movieUrl, fileType, text, resId, quotePos
     payload: payload
   };
 
+  // ログ出力
+  Logger.log('url: ' + url);
+  Logger.log('createOptions: ' + JSON.stringify(createOptions));
 
   try {
     Logger.log('スレッド作成リクエストを送信');
     //const response = UrlFetchApp.fetch(url);
-    const response = UrlFetchApp.fetch(url, createOptions);
+    const response = UrlFetchApp.fetch(url, {
+      ...createOptions,
+      muteHttpExceptions: true
+    });
     Logger.log(`スレッド作成レスポンス: ${response.getResponseCode()}`);
     
     Logger.log('API制限対策の待機開始（2秒）');
@@ -488,6 +501,7 @@ function uploadSingleImageVideo(fileUrl, movieUrl, fileType, resId, quotePostId)
   Logger.log('movieUrl:' + movieUrl);
   Logger.log('fileType：' + fileType);
   Logger.log('resId:' + resId);
+  Logger.log('quotePostId:' + quotePostId);
 
     // プロパティを取得
   const prop = getSystemProperty();
@@ -519,11 +533,11 @@ function uploadSingleImageVideo(fileUrl, movieUrl, fileType, resId, quotePostId)
     payload.quote_post_id = quotePostId;
   }
 
-  if(fileType == "image"){
-    payload.media_type = "IMAGE";
+  if(fileType == CONFIG.STRING_IMAGE){
+    payload.media_type = CONFIG.STRING_IMAGE;
     payload.image_url = fileUrl
   }else{
-    payload.media_type = "VIDEO";
+    payload.media_type = CONFIG.STRING_VIDEO;
     payload.video_url = movieUrl;
   }
 
@@ -536,9 +550,16 @@ function uploadSingleImageVideo(fileUrl, movieUrl, fileType, resId, quotePostId)
     payload: payload
   };
 
+  // ログ出力
+  Logger.log('url: ' + url);
+  Logger.log('createOptions: ' + JSON.stringify(createOptions));
+
   try {
     Logger.log('アイテムコンテナ作成リクエストを送信');
-    const response = UrlFetchApp.fetch(url, createOptions);
+    const response = UrlFetchApp.fetch(url, {
+      ...createOptions,
+      muteHttpExceptions: true
+    });
     Logger.log(`アイテムコンテナ作成レスポンス: ${response.getResponseCode()}`);
     
     Logger.log('API制限対策の待機開始（2秒）');
@@ -608,7 +629,7 @@ function postCarouselContainer(mediaIds, text, resId, quotePostId){
         let urlContainerStatus = 'https://graph.threads.net/v1.0/' + mediaIds[i] + `?fields=status,error_message&access_token=${prop.threadsLongTimeToken}`;
         Logger.log(`urlContainerStatus:${urlContainerStatus}`);
 
-        let containerStatusResponse = UrlFetchApp.fetch(urlContainerStatus);
+        let containerStatusResponse = UrlFetchApp.fetch(urlContainerStatus, { muteHttpExceptions: true });
         let containerStatusJson = JSON.parse(containerStatusResponse.getContentText());
 
         // Containerステータスが完了以外の場合は待ちフラグをオンにして抜ける
@@ -665,7 +686,10 @@ function postCarouselContainer(mediaIds, text, resId, quotePostId){
     };
 
     Logger.log('カルーセルコンテナ作成リクエストを送信');
-    const response = UrlFetchApp.fetch(url, createOptions);
+    const response = UrlFetchApp.fetch(url, {
+      ...createOptions,
+      muteHttpExceptions: true
+    });
     Logger.log(`カルーセルコンテナ作成レスポンス: ${response.getResponseCode()}`);
     
     Logger.log('API制限対策の待機開始（2秒）');
@@ -763,7 +787,7 @@ function puglishPostInfo(creationId){
     for(let tryCount = 0; tryCount<retryLimitCount; tryCount++){
       Logger.log(`tryCount:${tryCount}回目`);
 
-      let containerStatusResponse = UrlFetchApp.fetch(urlContainerStatus);
+      let containerStatusResponse = UrlFetchApp.fetch(urlContainerStatus, { muteHttpExceptions: true });
       let containerStatusJson = JSON.parse(containerStatusResponse.getContentText());
 
 
@@ -784,7 +808,10 @@ function puglishPostInfo(creationId){
     Logger.log('スレッド公開リクエストを送信');
     Logger.log(`url:${url}`);
     Logger.log(`publishOptions:${JSON.stringify(payload)}`);
-    const publishResponse = UrlFetchApp.fetch(url, publishOptions);
+    const publishResponse = UrlFetchApp.fetch(url, {
+      ...publishOptions,
+      muteHttpExceptions: true
+    });
     Logger.log(`スレッド公開レスポンス: ${publishResponse.getResponseCode()}`);
 
     if (publishResponse.getResponseCode() === 200) {

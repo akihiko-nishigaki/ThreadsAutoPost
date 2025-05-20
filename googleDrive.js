@@ -408,13 +408,16 @@ function getAttachmentImageMovies(sheet, row) {
       if (fileCategory !== 'unknown') {
         let wkUrl = "";
 
-        if (fileCategory == CONFIG.STRING_VIDEO) {
-          // ビデオの場合はファイルをcloudflareへアップロードする
-          wkUrl = cloudflareMovieUpload(fileInfo.fileId[0]);
-        }
+        // if (fileCategory == CONFIG.STRING_VIDEO) {
+        //   // ビデオの場合はファイルをcloudflareへアップロードする
+        //   wkUrl = cloudflareMovieUpload(fileInfo.fileId[0]);
+        // }
         
+        wkUrl =uploadFileToCloudinary(fileInfo.fileId, fileCategory);
+
         attachments.push({
-          url: fileInfo.filedirecturl,
+          // url: fileInfo.filedirecturl,
+          url: wkUrl,
           movieDirectUrl: wkUrl,
           fileId: fileInfo.fileId[0],
           fileCategory: fileCategory
@@ -541,7 +544,8 @@ function getFileInfo(fileUrl) {
  ****************************************/
 function convertDriveUrl(url, extension) {
   const fileId = url.match(/[-\w]{25,}/)[0];
-  return `https://drive.google.com/uc?id=${fileId}&${extension}`;
+  // Threadsが認識できる形式に変更
+  return `https://drive.usercontent.google.com/download?id=${fileId}`;
 }
 
 /****************************************

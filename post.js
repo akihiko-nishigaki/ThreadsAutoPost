@@ -167,16 +167,16 @@ function postThreads(rowData, rowIndex, attachmentFiles, tableData, sheetName){
       creationId = singlePostTextOnly(postText, resId, quoteId);
     }
     // 添付ファイルが1つの場合
-    else if(attachmentFiles.length == 1){
+    else if(attachmentFiles.length > 0){
       // ファイルを添付する
-      creationId = singlePostAttachFile(attachmentFiles[0].url, attachmentFiles[0].movieDirectUrl, attachmentFiles[0].fileCategory, postText, resId, quoteId);
+      // creationId = singlePostAttachFile(attachmentFiles[0].url, attachmentFiles[0].movieDirectUrl, attachmentFiles[0].fileCategory, postText, resId, quoteId);
       // if (attachmentFiles[0].fileCategory == CONFIG.STRING_IMAGE){
       //   // 画像のみ処理する　※動画はURLでしか指定できないため現時点で保留
       //   creationId = singlePostAttachFile(attachmentFiles[0].url, attachmentFiles[0].fileCategory, postText);
       // }
-    }
+    // }
     // 添付ファイルが2つ以上の場合
-    else{
+    // else{
       let mediaIds = [];
 
       attachmentFiles.forEach((attachment, index) => {
@@ -190,15 +190,21 @@ function postThreads(rowData, rowIndex, attachmentFiles, tableData, sheetName){
       creationId = postCarouselContainer(mediaIds, postText);
     }
 
-    // 添付したファイルを公開する
-    let publish = puglishPostInfo(creationId);
+    // ログ出力
+    Logger.log('creationId: ' + creationId);
 
-    Logger.log(`行${rowIndex}: 投稿成功 (postId: ${publish.postId})`);
-      
-    // 投稿成功後、投稿した情報を取得する
-    let threadsPostInfo = getThreadsPostInfoDetail(publish);
-    return threadsPostInfo;
+    // IDが取得できた場合、公開を行う
+    if(creationId != ""){
+      let publish = puglishPostInfo(creationId);
+
+      Logger.log(`行${rowIndex}: 投稿成功 (postId: ${publish.postId})`);
+        
+      // 投稿成功後、投稿した情報を取得する
+      let threadsPostInfo = getThreadsPostInfoDetail(publish);
+      return threadsPostInfo;
   
+    }
+
   }catch(ex){
     return {
       id: "",
