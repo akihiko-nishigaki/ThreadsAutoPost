@@ -192,6 +192,9 @@ function instaSinglePostAttachFile(fileUrl, movieUrl, fileType, uploadType, text
 
   }
 
+  // Payloadをログに出力する
+  Logger.log('payload:' + JSON.stringify(payload));
+
   try {
     const response = UrlFetchApp.fetch(endpoint, {
       method: 'post',

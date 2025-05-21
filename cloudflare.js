@@ -7,7 +7,7 @@ const SERVICE = 's3';
  * @param {string} fileId - Google DriveのファイルID
  */
 function testupload() {
-  uploadToCloudflareR2("16h0jr1RsN4o381jksCTWWn8-0kqoRfeC", "aiueo");
+  cloudflareFileUpload("16h0jr1RsN4o381jksCTWWn8-0kqoRfeC");
 }
 
 // ============ AWS4-HMAC-SHA256署名の生成に必要な補助関数群 ============
@@ -376,7 +376,7 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-function cloudflareMovieUpload(fileId)
+function cloudflareFileUpload(fileId)
 {
   let userInfo = Session.getActiveUser();
   let userName = getLocalPartFromEmail(userInfo.getEmail());

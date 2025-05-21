@@ -162,21 +162,27 @@ function postThreads(rowData, rowIndex, attachmentFiles, tableData, sheetName){
 
     let postText = convertMentionInfo(rowData[CONFIG.POST_TEXT], SNS_CONVERT.COL.THREADS);
 
+    // 添付ファイル数をログに出力する
+    Logger.log(`添付ファイル数: ${attachmentFiles.length}`);
+
     // 添付ファイルなし
     if(attachmentFiles.length == 0){
       creationId = singlePostTextOnly(postText, resId, quoteId);
     }
     // 添付ファイルが1つの場合
-    else if(attachmentFiles.length > 0){
+    else if(attachmentFiles.length == 1){
       // ファイルを添付する
-      // creationId = singlePostAttachFile(attachmentFiles[0].url, attachmentFiles[0].movieDirectUrl, attachmentFiles[0].fileCategory, postText, resId, quoteId);
+      creationId = singlePostAttachFile(attachmentFiles[0].url, attachmentFiles[0].movieDirectUrl, attachmentFiles[0].fileCategory, postText, resId, quoteId);
       // if (attachmentFiles[0].fileCategory == CONFIG.STRING_IMAGE){
       //   // 画像のみ処理する　※動画はURLでしか指定できないため現時点で保留
       //   creationId = singlePostAttachFile(attachmentFiles[0].url, attachmentFiles[0].fileCategory, postText);
+      // }else
+      // {
+      //   creationId = singlePostAttachFile(attachmentFiles[0].url, attachmentFiles[0].fileCategory, postText);
       // }
-    // }
+    }
     // 添付ファイルが2つ以上の場合
-    // else{
+    else{
       let mediaIds = [];
 
       attachmentFiles.forEach((attachment, index) => {
