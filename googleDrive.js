@@ -413,7 +413,8 @@ function getAttachmentImageMovies(sheet, row) {
         //   wkUrl = cloudflareMovieUpload(fileInfo.fileId[0]);
         // }
         
-        wkUrl =uploadFileToCloudinary(fileInfo.fileId, fileCategory);
+        // ファイルをアップロードする
+        wkUrl = cloudflareFileUpload(fileInfo.fileId[0]);
 
         attachments.push({
           // url: fileInfo.filedirecturl,

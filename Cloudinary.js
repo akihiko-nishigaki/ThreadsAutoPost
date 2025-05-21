@@ -72,6 +72,9 @@ function uploadFileToCloudinary(fileId, resourceType) {
   // アップロード URL
   const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType.toLowerCase()}/upload`;
 
+  // ログ出力
+  Logger.log('url: ' + url);
+
   // リクエスト実行
   const response = UrlFetchApp.fetch(url, {
     method: 'post',

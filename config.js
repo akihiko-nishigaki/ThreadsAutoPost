@@ -116,26 +116,26 @@ const CONFIG = {
   },
 
   // プロパティのセル位置
-  PROPERTY_CELL: {
-    // X（Twitter）関連
-    X_API_CLIENT: 'B2',  // APIクライアントID
-    X_API_CLIENT_SECRET: 'B3',  // APIクライアントシークレット
-    X_OAUTH2_TWITTER: 'B4',  // OAuth2トークン
-    X_CODE_VERIFIER: 'B5',  // コード検証子
-    X_USER_ID: 'B6',  // ユーザーID
+  // PROPERTY_CELL: {
+  //   // X（Twitter）関連
+  //   X_API_CLIENT: 'B2',  // APIクライアントID
+  //   X_API_CLIENT_SECRET: 'B3',  // APIクライアントシークレット
+  //   X_OAUTH2_TWITTER: 'B4',  // OAuth2トークン
+  //   X_CODE_VERIFIER: 'B5',  // コード検証子
+  //   X_USER_ID: 'B6',  // ユーザーID
 
-    // Threads関連
-    THREADS_CLIENT_ID: 'B7',  // クライアントID
-    THREADS_CLIENT_SECRET: 'B8',  // クライアントシークレット
-    THREADS_LONG_TIME_TOKEN: 'B9',  // 長期トークン
+  //   // Threads関連
+  //   THREADS_CLIENT_ID: 'B7',  // クライアントID
+  //   THREADS_CLIENT_SECRET: 'B8',  // クライアントシークレット
+  //   THREADS_LONG_TIME_TOKEN: 'B9',  // 長期トークン
 
-    // Instagram関連
-    INSTA_APP_ID: 'B10',  // アプリID
-    INSTA_APP_SECRET: 'B11',  // アプリシークレット
-    INSTA_SHORT_TIME_TOKEN: 'B12',  // 短期トークン
-    INSTA_LONG_ACCESS_TOKEN: 'B13',  // 長期アクセストークン
-    INSTA_BUSINESS_ID: 'B14',  // ビジネスアカウントID
-  },
+  //   // Instagram関連
+  //   INSTA_APP_ID: 'B10',  // アプリID
+  //   INSTA_APP_SECRET: 'B11',  // アプリシークレット
+  //   INSTA_SHORT_TIME_TOKEN: 'B12',  // 短期トークン
+  //   INSTA_LONG_ACCESS_TOKEN: 'B13',  // 長期アクセストークン
+  //   INSTA_BUSINESS_ID: 'B14',  // ビジネスアカウントID
+  // },
 
   // アカウント設定状態のセル位置
   CELL_SETTING_STATUS_X: 'C2',  // X（Twitter）
@@ -219,4 +219,9 @@ const PROPERTY_CELL ={
   WEB_POST_DEFAULT_X: 'B21',
   WEB_POST_DEFAULT_THREADS: 'B22',
   WEB_POST_DEFAULT_INSTAGRAM: 'B23',
+  CLOUD_FLARE_ACCESS_KEY: 'B24',
+  CLOUD_FLARE_SECRET_KEY: 'B25',
+  CLOUD_FLARE_ACCOUNT_ID: 'B26',
+  CLOUD_FLARE_BUCKET: 'B27',
+  CLOUD_FLARE_PUBLIC_URL: 'B28',
 };

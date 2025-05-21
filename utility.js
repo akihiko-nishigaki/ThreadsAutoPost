@@ -104,6 +104,11 @@ function getSystemProperty(){
   let webPostDefaultX = sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_X).getValue();
   let webPostDefaultThreads = sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_THREADS).getValue();
   let webPostDefaultInstagram = sheet.getRange(PROPERTY_CELL.WEB_POST_DEFAULT_INSTAGRAM).getValue();
+  let cloudflareAccessKey = sheet.getRange(PROPERTY_CELL.CLOUD_FLARE_ACCESS_KEY).getValue();
+  let cloudflareSecretKey = sheet.getRange(PROPERTY_CELL.CLOUD_FLARE_SECRET_KEY).getValue();
+  let cloudflareAccountId = sheet.getRange(PROPERTY_CELL.CLOUD_FLARE_ACCOUNT_ID).getValue();
+  let cloudflareBucket = sheet.getRange(PROPERTY_CELL.CLOUD_FLARE_BUCKET).getValue();
+  let cloudflarePublicUrl = sheet.getRange(PROPERTY_CELL.CLOUD_FLARE_PUBLIC_URL).getValue();
 
   return{
     uploadImageFoloderId: uploadImageFoloderId,
@@ -129,7 +134,12 @@ function getSystemProperty(){
     selectedSheetName: selectedSheetName,
     webPostDefaultX: webPostDefaultX,
     webPostDefaultThreads: webPostDefaultThreads,
-    webPostDefaultInstagram: webPostDefaultInstagram
+    webPostDefaultInstagram: webPostDefaultInstagram,
+    cloudflareAccessKey: cloudflareAccessKey,
+    cloudflareSecretKey: cloudflareSecretKey,
+    cloudflareAccountId: cloudflareAccountId,
+    cloudflareBucket: cloudflareBucket,
+    cloudflarePublicUrl: cloudflarePublicUrl
   }
 }
 
