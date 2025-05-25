@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    .container {
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .btn {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background-color: #4285f4;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #357abd;
+    }
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-group">
+      <label for="folderUrl">処理対象フォルダのURL:</label>
+      <input type="text" id="folderUrl" class="form-control" placeholder="Google DriveのフォルダURLを入力してください">
+    </div>
+    <button class="btn btn-primary" onclick="processFiles()">処理開始</button>
+    <div id="message" class="message" style="display: none;"></div>
+  </div>
+  
+  <script>
+    // ファイル処理を実行
+    function processFiles() {
+      const folderUrl = document.getElementById('folderUrl').value;
+      if (!folderUrl) {
+        showMessage('フォルダURLを入力してください。', false);
+        return;
+      }
+      
+      // ボタンを無効化
+      const button = document.querySelector('.btn-primary');
+      button.disabled = true;
+      button.textContent = '処理中...';
+      
+      // サーバーサイド関数を呼び出し
+      google.script.run
+        .withSuccessHandler(function(result) {
+          button.disabled = false;
+          button.textContent = '処理開始';
+          showMessage(result.message, result.success);
+        })
+        .withFailureHandler(function(error) {
+          button.disabled = false;
+          button.textContent = '処理開始';
+          showMessage('エラーが発生しました: ' + error.message, false);
+        })
+        .processFilesInFolder(folderUrl);
+    }
+    
+    // メッセージを表示
+    function showMessage(message, isSuccess) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = 'message ' + (isSuccess ? 'success' : 'error');
+      messageDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

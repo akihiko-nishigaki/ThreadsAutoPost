@@ -1,0 +1,82 @@
+<!-- AuthDialog.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 15px;
+        line-height: 1.6;
+      }
+      .container {
+        padding: 10px;
+      }
+      .auth-link {
+        display: none;
+        margin-top: 15px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        word-break: break-all;
+      }
+      .auth-link a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .auth-link a:hover {
+        text-decoration: underline;
+      }
+      .message {
+        margin-top: 15px;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+      }
+      .success {
+        color: #155724;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>認証</h2>
+      <p>アプリケーションの利用に必要な認証を行います。</p>
+      <div id="authLink" class="auth-link"></div>
+      <div id="message"></div>
+    </div>
+    
+    <script>
+      // ページ読み込み時に認証URLを取得
+      google.script.run
+        .withSuccessHandler(function(url) {
+          if (url) {
+            // 未認証の場合、認証リンクを表示
+            document.getElementById('authLink').style.display = 'block';
+            document.getElementById('authLink').innerHTML = 
+              '<p>以下のリンクをクリックして認証を行ってください：</p>' +
+              '<a href="' + url + '" target="_blank">' + url + '</a>';
+          } else {
+            // 既に認証済みの場合、メッセージを表示
+            document.getElementById('message').className = 'message success';
+            document.getElementById('message').innerHTML = 
+              '<p>既に認証されています。このダイアログを閉じて操作を続けることができます。</p>';
+          }
+        })
+        .withFailureHandler(function(error) {
+          // エラー発生時の処理
+          document.getElementById('message').className = 'message error';
+          document.getElementById('message').innerHTML = 
+            '<p>エラーが発生しました：' + error.message + '</p>';
+        })
+        .getAuthUrl();
+    </script>
+  </body>
+</html>

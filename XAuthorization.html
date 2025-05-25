@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .title {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 24px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #1da1f2;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 16px;
+      margin: 10px 0;
+    }
+    .button:hover {
+      background-color: #0c84c6;
+    }
+    .info-box {
+      background-color: #e8f4f8;
+      border: 1px solid #b3d7ff;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .info-box h4 {
+      margin-top: 0;
+      color: #004085;
+    }
+    .info-box p {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">Twitterアカウント認証</h1>
+    
+    <div class="info-box">
+      <h4>認証手順</h4>
+      <p>1. 以下のボタンをクリックして認証を開始します。</p>
+      <p>2. Twitterの認証画面が開きます。</p>
+      <p>3. アプリの使用を許可してください。</p>
+      <p>4. 認証が完了したら、このウィンドウを閉じてください。</p>
+    </div>
+
+    <a href="<?= authorizationURL ?>" target="_blank" class="button">アカウント認証を開始</a>
+    
+    <div class="info-box">
+      <h4>注意事項</h4>
+      <p>• 認証が完了するまで、このウィンドウは閉じないでください。</p>
+      <p>• エラーが発生した場合は、もう一度お試しください。</p>
+    </div>
+  </div>
+</body>
+</html>
