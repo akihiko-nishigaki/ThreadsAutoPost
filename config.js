@@ -93,6 +93,10 @@ const CONFIG = {
   X: {
     MAX_IMAGES: 4,  // 最大画像数
     MAX_VIDEO_SIZE: 512 * 1024 * 1024,  // 動画の最大サイズ（512MB）
+    MEDIA_CATEGORY:{
+      IMAGE: 'tweet_image',
+      VIDEO: 'tweet_video'
+    }
   },
 
   // Threads設定

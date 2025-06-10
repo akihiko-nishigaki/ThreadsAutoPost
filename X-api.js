@@ -10,46 +10,39 @@ const ACCESS_TOKEN_URL = 'https://api.x.com/2/oauth2/token';
 
 
 //********************************
-//  認可開始：Lambda /init 呼び出し（改修版）
+//  認可開始：Lambda /init 呼び出し
 //********************************
 function authorizeLinkForNewTwitterBotWithImage() {
-  // 1) スクリプトプロパティから client_id / client_secret を取得
-  const prop = getSystemProperty();
-  const clientId     = prop.xApiClient;        // スクリプトプロパティに設定してある X API Client ID
-  const clientSecret = prop.xApiClientSecret;  // スクリプトプロパティに設定してある X API Client Secret
+  const prop         = getSystemProperty();
+  const clientId     = prop.xApiClient;
+  const clientSecret = prop.xApiClientSecret;
   if (!clientId || !clientSecret) {
     throw new Error('CLIENT_ID または CLIENT_SECRET が設定されていません');
   }
 
-  // 2) 呼び出し先 URL にクエリ文字列を付与
   const url = INIT_URL
     + '?client_id='     + encodeURIComponent(clientId)
     + '&client_secret=' + encodeURIComponent(clientSecret);
   Logger.log('INIT_URL = ' + url);
 
-  // 3) Lambda /init を呼び出し
   const resp = UrlFetchApp.fetch(url, {
     method: 'get',
     muteHttpExceptions: true
   });
 
-  // 4) レスポンス状況を詳細ログ出力
   Logger.log('Response Code    = ' + resp.getResponseCode());
   Logger.log('Response Headers = ' + JSON.stringify(resp.getAllHeaders()));
   Logger.log('Response Body    = ' + resp.getContentText());
 
-  // 5) 200 以外は例外
   if (resp.getResponseCode() !== 200) {
     throw new Error('認可開始エラー: ' + resp.getContentText());
   }
 
-  // 6) JSON パース
   const { authorizationUrl, state } = JSON.parse(resp.getContentText());
   if (!authorizationUrl || !state) {
     throw new Error('Lambda /init のレスポンスが不正です');
   }
 
-  // 7) state をシートに保持
   const sht = SpreadsheetApp
     .getActiveSpreadsheet()
     .getSheetByName(SYSTEM_SHEET_NAME);
@@ -58,7 +51,6 @@ function authorizeLinkForNewTwitterBotWithImage() {
   }
   sht.getRange(PROPERTY_CELL.X_STATE_CELL).setValue(state);
 
-  // 8) 認可リンクをダイアログで表示
   const html = HtmlService
     .createHtmlOutput(
       `<p>下のリンクをクリックして X(Twitter) の認可を行ってください</p>
@@ -70,10 +62,9 @@ function authorizeLinkForNewTwitterBotWithImage() {
   SpreadsheetApp.getUi().showModalDialog(html, 'X アカウント認証');
 }
 
-
-/**
- * 2-1. トークン取得：Lambda /token 呼び出し
- */
+//********************************
+//  トークン取得：Lambda /token 呼び出し
+//********************************
 function fetchAccessToken() {
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
   const sht   = ss.getSheetByName(SYSTEM_SHEET_NAME);
@@ -97,11 +88,13 @@ function fetchAccessToken() {
     throw new Error('トークンレスポンス不正: ' + resp.getContentText());
   }
 
-  // JSON 全文をシートに保存（デバッグ用／必要に応じてプロパティにも）
-  Logger.log('resp.getContentText(): ' + resp.getContentText());
-  setSystemProperty(PROPERTY_CELL.X_OAUTH2_TWITTER, data);
-  
-  //sht.getRange(PROPERTY_CELL.X_OAUTH2_TWITTER).setValue(resp.getContentText());
+  // プロパティには必ず JSON 文字列で保存する
+  data.timestamp = Date.now();
+  setSystemProperty(
+    PROPERTY_CELL.X_OAUTH2_TWITTER,
+    JSON.stringify(data)
+  );
+
   return data.access_token;
 }
 
@@ -111,89 +104,71 @@ function fetchAccessToken() {
 //　ポスト情報送信用処理（トークン管理）
 //********************************
 function getXService() {
-  const prop    = getSystemProperty();
-  const raw     = prop.xApiOauth2 || '';
+  const prop = getSystemProperty();
+  let raw    = prop.xApiOauth2 || '';
   Logger.log('Existing tokenData(raw): ' + raw);
 
-  // キャッシュトークンのパース
-  if (raw) {
-    try {
-      const tokenData = JSON.parse(raw);
-      const now       = Date.now();
-      const ageSec    = (now  - (tokenData.timestamp || 0));
-      Logger.log(`Token age: ${ageSec}s / expires_in: ${tokenData.expires_in}`);
+  // 不正な JSON ならクリア
+  try {
+    var tokenData = JSON.parse(raw);
+  } catch (e) {
+    Logger.log('❌ トークンデータが不正です。クリアします。');
+    setSystemProperty(PROPERTY_CELL.X_OAUTH2_TWITTER, '');
+    raw = '';
+    tokenData = null;
+  }
 
-      // 1) 有効期限内ならキャッシュそのまま
-      if (tokenData.access_token && ageSec < tokenData.expires_in) {
-        Logger.log('✔️ Using cached access_token');
-        return {
-          hasAccess:    () => true,
-          getAccessToken: () => tokenData.access_token,
-          // reset:        () => {
-          //   Logger.log('🔄 Resetting token cache');
-          //   setSystemProperty(PROPERTY_CELL.X_OAUTH2_TWITTER, '');
-          //   setSystemProperty(PROPERTY_CELL.X_CODE_VERIFIER, '');
-          // }
-        };
-      }
+  if (tokenData) {
+    const now    = Date.now();
+    const ageSec = (now - tokenData.timestamp) / 1000;
+    Logger.log(`Token age: ${ageSec}s / expires_in: ${tokenData.expires_in}s`);
 
-      // 2) リフレッシュトークンがあれば更新
-      if (tokenData.refresh_token) {
-        Logger.log('🔄 Attempting refresh with refresh_token');
-        const newTokenData = refreshAccessToken(
-          tokenData.refresh_token,
-          prop.xApiClient,
-          prop.xApiClientSecret
-        );
-        Logger.log('Refresh response data: ' + JSON.stringify(newTokenData));
-
-        // プロパティに丸ごと保存
-        setSystemProperty(
-          PROPERTY_CELL.X_OAUTH2_TWITTER,
-          JSON.stringify(newTokenData)
-        );
-
-        return {
-          hasAccess:    () => true,
-          getAccessToken: () => newTokenData.access_token,
-          // reset:        () => {
-          //   Logger.log('🔄 Resetting token cache after refresh');
-          //   setSystemProperty(PROPERTY_CELL.X_OAUTH2_TWITTER, '');
-          //   setSystemProperty(PROPERTY_CELL.X_CODE_VERIFIER, '');
-          // }
-        };
-      }
-
-      Logger.log('⚠️ Cached token expired and no refresh_token available');
-    } catch (e) {
-      Logger.log('❌ Error parsing tokenData: ' + e);
+    // 1) 有効期限内ならキャッシュそのまま
+    if (tokenData.access_token && ageSec < tokenData.expires_in) {
+      Logger.log('✔️ Using cached access_token');
+      return {
+        hasAccess:       () => true,
+        getAccessToken:  () => tokenData.access_token
+      };
     }
+
+    // 2) リフレッシュトークンがあれば更新
+    if (tokenData.refresh_token) {
+      Logger.log('🔄 Attempting refresh with refresh_token');
+      const newTokenData = refreshAccessToken(
+        tokenData.refresh_token,
+        prop.xApiClient,
+        prop.xApiClientSecret
+      );
+      Logger.log('Refresh response data: ' + JSON.stringify(newTokenData));
+
+      setSystemProperty(
+        PROPERTY_CELL.X_OAUTH2_TWITTER,
+        JSON.stringify(newTokenData)
+      );
+
+      return {
+        hasAccess:      () => true,
+        getAccessToken: () => newTokenData.access_token
+      };
+    }
+
+    Logger.log('⚠️ Cached token expired and no refresh_token available');
   }
 
   // 3) 新規取得フェーズ
   Logger.log('➡️ Fetching new access_token from Lambda');
   const accessToken = fetchAccessToken();
 
-  // 設定済みを入れる
-  setSnsAccountSettingStatus(CONFIG.CELL_SETTING_STATUS_X); // ステータス：設定済
-  setSnsCheck(CONFIG.CELL_SETTING_CHECKBOX_X);  // チェックボックスオン
-
-
-  // fetchAccessToken 内でシートに raw JSON を保存済みなので
-  // 必要に応じてプロパティにも保存しておく
-  // const fullRaw = prop.xToken;
-  // setSystemProperty(PROPERTY_CELL.X_OAUTH2_TWITTER, fullRaw);
+  setSnsAccountSettingStatus(CONFIG.CELL_SETTING_STATUS_X);
+  setSnsCheck(CONFIG.CELL_SETTING_CHECKBOX_X);
 
   return {
-    hasAccess:    () => !!accessToken,
-    getAccessToken: () => accessToken,
-    // reset:        () => {
-    //   Logger.log('🔄 Resetting token cache after fetch');
-    //   setSystemProperty(PROPERTY_CELL.X_OAUTH2_TWITTER, '');
-    //   setSystemProperty(PROPERTY_CELL.X_CODE_VERIFIER, '');
-    // }
+    hasAccess:      () => !!accessToken,
+    getAccessToken: () => accessToken
   };
 }
+
 
 
 //********************************
@@ -207,12 +182,13 @@ function refreshAccessToken(refreshToken, clientId, clientSecret) {
     refresh_token: refreshToken
   };
   Logger.log('Refresh payload: ' + JSON.stringify(payload));
+
   const options = {
     method: 'post',
     payload: payload,
     headers: {
       'Authorization': 'Basic ' + Utilities.base64Encode(clientId + ':' + clientSecret),
-      'Content-Type': 'application/x-www-form-urlencoded'
+      'Content-Type':  'application/x-www-form-urlencoded'
     },
     muteHttpExceptions: true
   };
@@ -223,6 +199,7 @@ function refreshAccessToken(refreshToken, clientId, clientSecret) {
   if (code !== 200) {
     throw new Error('リフレッシュ失敗: ' + text);
   }
+
   const tokenData = JSON.parse(text);
   tokenData.timestamp = Date.now();
   return tokenData;
@@ -230,120 +207,75 @@ function refreshAccessToken(refreshToken, clientId, clientSecret) {
 
 
 
-/**
- * 認証コールバック関数
- * @param {Object} request eパラメータ
- * @returns {HtmlOutput} 認証結果HTML出力
- */
+//********************************
+// 認証コールバック関数
+//********************************
 function authCallback(request) {
-  
   const prop = getSystemProperty();
 
-  // リクエストパラメータのログ出力
   Logger.log('コールバックリクエスト: ' + JSON.stringify(request.parameter));
-  
-  var service = getXService();
-  var spreadsheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+
+  var service      = getXService();
   var codeVerifier = getSystemPropertyValue(PROPERTY_CELL.X_CODE_VERIFIER);
-  var clientId = prop.xApiClient;
+  var clientId     = prop.xApiClient;
   var clientSecret = prop.xApiClientSecret;
-  var redirectUri = getRedirectUri();
-  
-  Logger.log('コールバック処理 - code_verifier: ' + codeVerifier);
-  Logger.log('リダイレクトURI: ' + redirectUri);
-  
-  // code_verifierを直接URLパラメーターとして追加
+  var redirectUri  = getRedirectUri();
+
   var payload = {
-    'code': request.parameter.code,
+    'code':          request.parameter.code,
     'code_verifier': codeVerifier,
-    'grant_type': 'authorization_code',
-    'redirect_uri': redirectUri,
-    'client_id': clientId
+    'grant_type':    'authorization_code',
+    'redirect_uri':  redirectUri,
+    'client_id':     clientId
   };
-  
-  // トークンリクエストのオプションを設定
+
   var tokenOptions = {
-    'method': 'post',
-    'contentType': 'application/x-www-form-urlencoded',
-    'payload': payload,
+    'method':         'post',
+    'contentType':    'application/x-www-form-urlencoded',
+    'payload':        payload,
     'headers': {
       'Authorization': 'Basic ' + Utilities.base64Encode(clientId + ':' + clientSecret)
     },
     'muteHttpExceptions': true
   };
-  
+
   try {
-    // リクエスト情報をログ出力（デバッグ用）
-    Logger.log('トークンリクエスト URL: https://api.twitter.com/2/oauth2/token');
-    Logger.log('トークンリクエスト ペイロード: ' + JSON.stringify(payload));
-    Logger.log('トークンリクエスト ヘッダー: ' + JSON.stringify(tokenOptions.headers));
-    
-    // 直接トークンをリクエスト
-    var response = UrlFetchApp.fetch('https://api.twitter.com/2/oauth2/token', tokenOptions);
+    var response     = UrlFetchApp.fetch(ACCESS_TOKEN_URL, tokenOptions);
     var responseCode = response.getResponseCode();
     var responseText = response.getContentText();
-    
+
     Logger.log('トークンレスポンス コード: ' + responseCode);
     Logger.log('トークンレスポンス: ' + responseText);
-    
-    // レスポンスのパース
+
     if (responseCode >= 200 && responseCode < 300) {
-      try {
-        var tokenData = JSON.parse(responseText);
-        
-        if (tokenData.access_token) {
-          // トークンを保存
-          setSystemProperty(PROPERTY_CELL.X_OAUTH2_TWITTER, JSON.stringify({
-            access_token: tokenData.access_token,
+      var tokenData = JSON.parse(responseText);
+      if (tokenData.access_token) {
+        setSystemProperty(
+          PROPERTY_CELL.X_OAUTH2_TWITTER,
+          JSON.stringify({
+            access_token:  tokenData.access_token,
             refresh_token: tokenData.refresh_token,
-            expires_in: tokenData.expires_in,
-            timestamp: new Date().getTime()
-          }));
-          
-           
-          return HtmlService.createHtmlOutput(
-            '<h3>認証が成功しました</h3>' +
-            '<p>このタブを閉じて、スクリプトに戻ってください。</p>' +
-            '<p>アクセストークンが正常に取得されました。</p>'
-          );
-        } else {
-          return HtmlService.createHtmlOutput(
-            '<h3>認証エラー</h3>' +
-            '<p>アクセストークンが取得できませんでした。</p>' +
-            '<pre>' + JSON.stringify(tokenData, null, 2) + '</pre>'
-          );
-        }
-      } catch (parseError) {
-        Logger.log('JSONパースエラー: ' + parseError);
+            expires_in:    tokenData.expires_in,
+            timestamp:     Date.now()
+          })
+        );
         return HtmlService.createHtmlOutput(
-          '<h3>レスポンス解析エラー</h3>' +
-          '<p>APIからのレスポンスを解析できませんでした。</p>' +
-          '<p>エラー: ' + parseError + '</p>' +
-          '<p>レスポンス: ' + responseText + '</p>'
+          '<h3>認証が成功しました</h3>' +
+          '<p>このタブを閉じて、スクリプトに戻ってください。</p>'
         );
       }
-    } else {
-      // エラーレスポンスの処理
-      return HtmlService.createHtmlOutput(
-        '<h3>APIエラー</h3>' +
-        '<p>ステータスコード: ' + responseCode + '</p>' +
-        '<p>エラーメッセージ: ' + responseText + '</p>' +
-        '<p>このエラーについては、X Developer Portalの設定を確認してください。</p>' +
-        '<p>特に、リダイレクトURI: <code>' + getRedirectUri() + '</code> が正しく設定されていることを確認してください。</p>'
-      );
     }
+    // エラー時 HTML
+    return HtmlService.createHtmlOutput(
+      `<h3>APIエラー</h3>
+       <p>ステータスコード: ${responseCode}</p>
+       <pre>${responseText}</pre>`
+    );
   } catch (e) {
     Logger.log('トークン取得エラー: ' + e.toString());
     return HtmlService.createHtmlOutput(
-      '<h3>リクエストエラー</h3>' +
-      '<p>APIへのリクエスト中にエラーが発生しました。</p>' +
-      '<p>エラー: ' + e.toString() + '</p>' +
-      '<p>以下の点を確認してください：</p>' +
-      '<ul>' +
-      '<li>スクリプトプロパティにCLIENT_IDとCLIENT_SECRETが正しく設定されているか</li>' +
-      '<li>X Developer PortalでリダイレクトURLが <code>' + getRedirectUri() + '</code> として登録されているか</li>' +
-      '<li>TwitterアプリでOAuth 2.0とPKCEが有効になっているか</li>' +
-      '</ul>'
+      `<h3>リクエストエラー</h3>
+       <p>${e.toString()}</p>`
     );
   }
 }
@@ -363,60 +295,59 @@ function setXUserId(){
 }
 
 
-
-// PKCE用のcode_verifierを生成
+//********************************
+// PKCE ヘルパー
+//********************************
 function generateCodeVerifier() {
-  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-  var verifier = '';
-  for (var i = 0; i < 128; i++) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  let verifier = '';
+  for (let i = 0; i < 128; i++) {
     verifier += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return verifier;
 }
 
-// PKCE用のcode_challengeを生成
 function generateCodeChallenge(verifier) {
-  var rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, verifier);
-  var encoded = Utilities.base64Encode(rawHash);
-  // Base64 URL safe対応
+  const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, verifier);
+  const encoded = Utilities.base64Encode(rawHash);
   return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// リダイレクトURIを取得する関数
+
 function getRedirectUri() {
-  // スクリプトIDの取得
-  var scriptId = ScriptApp.getScriptId();
-  // リダイレクトURIの組み立て
-  return 'https://script.google.com/macros/d/' + scriptId + '/usercallback';
+  return 'https://script.google.com/macros/d/' +
+         ScriptApp.getScriptId() +
+         '/usercallback';
 }
 
-// 認証URLを取得するための関数
+
+
+//********************************
+// 認証URL取得 & リセット
+//********************************
 function getAuthorizationUrl() {
-  // まず古い認証情報をクリア
   resetAuth();
 
-  // システムプロパティを取得
-  const prop = getSystemProperty();
-  
-  // サービスを取得
-  var service = getXService();
-  
-  // PKCE用のcode_challengeを生成
-  var codeVerifier = generateCodeVerifier();
-  var codeChallenge = generateCodeChallenge(codeVerifier);
-  
-  // code_verifierを保存（デバッグ用にログも出力）
-  setSystemProperty(PROPERTY_CELL.X_CODE_VERIFIER, codeVerifier);
-  Logger.log('生成されたcode_verifier: ' + codeVerifier);
-  Logger.log('生成されたcode_challenge: ' + codeChallenge);
-  
-  // code_challengeを設定
-  service.setParam('code_challenge', codeChallenge);
-  
-  var authUrl = service.getAuthorizationUrl();
-  Logger.log('認証URLを開いてください: %s', authUrl);
+  // PKCE用 code_challenge
+  const verifier       = generateCodeVerifier();
+  const challenge      = generateCodeChallenge(verifier);
+  setSystemProperty(PROPERTY_CELL.X_CODE_VERIFIER, verifier);
+  Logger.log('code_verifier: ' + verifier);
+  Logger.log('code_challenge: ' + challenge);
+
+  const service        = getXService();
+  service.setParam('code_challenge', challenge);
+  const authUrl        = service.getAuthorizationUrl();
+  Logger.log('認証URL: ' + authUrl);
   return authUrl;
 }
+
+function resetAuth() {
+  setSystemProperty(PROPERTY_CELL.X_OAUTH2_TWITTER, '');
+  setSystemProperty(PROPERTY_CELL.X_CODE_VERIFIER, '');
+  Logger.log('認証状態をリセットしました。');
+}
+
 
 // 認証状態をリセット（トラブルシューティング用）
 function resetAuth() {
@@ -475,11 +406,16 @@ function uploadImagesForX(attachmentInfo, index) {
     // Blob オブジェクトをそのまま payload にセット
     var options = {
       method: "post",
-      payload: { media: imageBlob },
+      payload: { 
+        media: imageBlob,
+        media_category: CONFIG.X.MEDIA_CATEGORY.IMAGE
+      },
       headers: { "Authorization": "Bearer " + accessToken },
       muteHttpExceptions: true
     };
     
+    Logger.log(`Options: ${options}`);
+
     var response = UrlFetchApp.fetch(uploadMediaEndpoint, options);
     Logger.log("シンプルアップロード応答: " + response.getContentText());
     
@@ -490,7 +426,7 @@ function uploadImagesForX(attachmentInfo, index) {
       throw new Error("Twitterシンプルアップロードエラー: " + JSON.stringify(result.errors));
     }
     
-    var mediaId = result.id;
+    var mediaId = result.data.id;
     if (!mediaId) {
       throw new Error("アップロード成功しましたが、メディアIDが取得できませんでした: " + response.getContentText());
     }
@@ -553,7 +489,7 @@ function uploadVideoForX(attachVideoInfo, index) {
     Logger.log(`動画アップロード開始 - ファイルサイズ: ${Math.round(totalBytes / 1024 / 1024)}MB`);
 
     // STEP 1: 初期化
-    const mediaId = initializeVideoUpload(service, totalBytes, mimeType, "tweet_video");
+    const mediaId = initializeVideoUpload(service, totalBytes, mimeType, CONFIG.X.MEDIA_CATEGORY.VIDEO);
     
     // STEP 2: チャンク分割アップロード
     appendVideoChunks(service, mediaId, videoBlob);
@@ -865,6 +801,7 @@ function postTweetWithMultipleImages(tweetText, attachmentInfos, resId, quoteId)
  * 動画付きツイートを投稿する関数
  * @param {string} tweetText ツイート本文
  * @param {string} videoFile 動画ファイル情報
+ * @param {string} mediaCategory メディアカテゴリ
  * @returns {Object} 投稿結果（tweetIdとURL）
  */
 function postTweetWithVideo(tweetText, videoFile) {
@@ -886,6 +823,7 @@ function postTweetWithVideo(tweetText, videoFile) {
       method: "post",
       payload: JSON.stringify(payloadObj),
       contentType: "application/json",
+      media_category: mediaCategory,
       muteHttpExceptions: true,
       headers: {
         'Authorization': 'Bearer ' + service.getAccessToken()
